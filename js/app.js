@@ -1,4 +1,4 @@
-/* Court Forms — app shell: home list, form screen, autosave, export. */
+/* i Court Forms — app shell: home list, form screen, autosave, export. */
 (function () {
   'use strict';
   const CF = window.CF, E = CF.engine;
@@ -25,7 +25,7 @@
   function showHome() {
     form = null;
     $('#formView').hidden = true; $('#home').hidden = false;
-    document.title = 'Court Forms';
+    document.title = 'i Court Forms';
     $('#formList').innerHTML = CF.forms.map(f =>
       `<a class="card" href="#/f/${f.id}"><strong>${escH(f.name)}</strong><span>${escH(f.desc)}</span><em>${escH(f.court)}</em></a>`).join('');
     const have = new Set(CF.forms.map(f => f.name.toLowerCase()));
@@ -37,7 +37,7 @@
   function openForm(f) {
     form = f; load(f);
     $('#home').hidden = true; $('#formView').hidden = false;
-    document.title = f.name + ' — Court Forms';
+    document.title = f.name + ' — i Court Forms';
     $('#fTitle').textContent = f.name;
     $('#fSub').textContent = f.desc + ' · ' + f.court;
     $('#orientSeg').innerHTML = f.orientations.map(o => `<button type="button" data-o="${o}">${o[0].toUpperCase() + o.slice(1)}</button>`).join('');
@@ -166,10 +166,16 @@
   }
 
   function route() {
+    if (CF.locked) return; // the sign-in / payment gate is showing
     const m = location.hash.match(/^#\/f\/([\w-]+)/);
     const f = m && CF.forms.find(x => x.id === m[1]);
     if (f) { if (f !== form) openForm(f); } else showHome();
   }
 
-  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
+  // The gate (js/gate.js) calls showApp() once the user is signed in with an active membership.
+  let started = false;
+  CF.showApp = () => { if (!started) { started = true; init(); } else { form = null; route(); } };
+  CF.hideApp = () => { form = null; $('#home').hidden = true; $('#formView').hidden = true; };
+  const boot = () => { if (!CF.gated) CF.showApp(); };
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
 })();

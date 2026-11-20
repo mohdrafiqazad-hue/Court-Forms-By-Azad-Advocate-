@@ -1,41 +1,42 @@
-# Court Forms
+# i Court Forms
 
-Court ke routine forms bharne ki offline web app. Fields bharein, live preview dekhein, aur court ke exact printed format mein **Word** aur **PDF** export karein.
+Court ke routine forms bharne ki web app. Fields bharein, live preview dekhein, aur court ke exact printed format mein **Word** aur **PDF** export karein. Install hone ke baad bina internet bhi chalti hai.
 
 Abhi ka form: **Form Nakal** (Form for Copies), District Courts Jalandhar. Aage aur forms judenge.
 
-## Kaise chalayein
-- **Local server se:** repo folder mein `python3 -m http.server 8000` chalayein, phir browser mein `http://localhost:8000` kholein.
-- **Seedha:** `index.html` par double-click karke Chrome ya Edge mein kholein. Is tareeke mein offline (install) wala hissa nahi chalta.
+## App kaise khulti hai
+1. **Google se login**
+2. **₹100 membership** (1 saal): Google Pay ya kisi bhi UPI app se payment, phir 12 ankon ka UPI transaction ID daalna
+3. **Admin approve karta hai** (`admin.html`), aur app apne aap khul jaati hai
+4. Membership phone mein yaad rehti hai, toh app offline bhi khulti hai
+
+Setup ke poore steps (Firebase, payment, website online karna, admin banna): **[SETUP.md](SETUP.md)**
 
 ## Phone par
-- Phone par form screen mein **Fill** aur **Preview** ke do tabs hain, aur neeche **Word / PDF** ke button.
-- Jin phones mein share ka option hai, wahan **Share PDF** button bhi dikhega, jisse PDF seedha WhatsApp par bhej sakte hain.
-- Date ke saath **Today** dabane par aaj ki tareekh bhar jati hai.
-- Jo bharte hain woh phone mein apne aap save rehta hai.
-
-## Online daalna (GitHub Pages)
-1. Repo mein **Settings → Pages** kholein.
-2. **Source: Deploy from a branch** chunein, phir woh branch jisme ye files hain, aur folder **`/ (root)`**. **Save** dabayein.
-3. 1–2 minute baad link milega. Use phone mein Chrome mein kholein, phir **⋮ → Add to Home screen / Install app**.
-4. Ek baar khulne ke baad app bina internet ke bhi chalegi.
-
-**Har update par** `sw.js` mein `VERSION` badlein (jaise `court-forms-v1` → `court-forms-v2`), warna logon ke phone mein purani app chalti rahegi.
+- Form screen mein **Fill** aur **Preview** ke tabs, aur neeche **Word / PDF** ke button.
+- **Share PDF** se PDF seedha WhatsApp par.
+- Date ke saath **Today** se aaj ki tareekh.
+- Bhara hua form phone mein apne aap save rehta hai. Ye data server par nahi jaata.
 
 ## Files
 | File | Kaam |
 |---|---|
-| `index.html` | Page ka dhaancha: home screen aur form screen |
-| `css/app.css` | Design (phone aur computer dono ke liye) |
-| `js/engine.js` | Preview, PDF aur Word banane wala common engine |
-| `js/app.js` | App ka chalna: forms ki list, fields, save, export |
+| `index.html` | Login, payment screens, home aur form screen |
+| `admin.html`, `js/admin.js` | Admin panel: payments approve/reject, members, users |
+| `js/config.js` | **Aapki settings:** Firebase config, UPI ID, price |
+| `js/gate.js` | Login aur membership ki jaanch |
+| `js/engine.js` | Preview, PDF aur Word banane wala engine |
+| `js/app.js` | Forms ki list, fields, save, export |
 | `forms/nakal.js` | Form Nakal ka format, fields aur sample case |
-| `lib/` | PDF aur Word banane wali libraries (offline ke liye andar rakhi hain) |
-| `manifest.webmanifest`, `sw.js`, `icons/` | App install aur offline chalne ke liye |
-| `tests/smoke.js` | Har form ko export karke check karne wala test |
+| `css/app.css` | Design |
+| `firestore.rules` | Database ki suraksha: kaun kya padh/likh sakta hai |
+| `firebase.json` | Firebase Hosting aur emulator settings |
+| `terms.html`, `privacy.html` | Terms aur Privacy Policy (**draft**, live se pehle poora karein) |
+| `lib/` | PDF, Word, Firebase aur QR ki libraries (offline ke liye andar) |
+| `manifest.webmanifest`, `sw.js`, `icons/` | Install aur offline ke liye |
+| `tests/` | Format test aur login/payment ka poora test |
 | `CLAUDE.md` | Claude Code ke liye poori jaankari |
 
-## Naya form jodna
-Har naya form `forms/` folder mein ek file hoga. Format hamesha asli printed form se liya jayega. Tarika `CLAUDE.md` mein likha hai.
+**Har update par** `sw.js` mein `VERSION` badlein (jaise `icf-v2` → `icf-v3`), warna logon ke phone mein purani app chalti rahegi.
 
 Export ki hui file court mein dene se pehle hamesha ek baar check karein.

@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// i Court Forms — who may read and write what.
+//   admins/{uid}     made by hand in the Firebase console (document ID = admin's UID)
+//   users/{uid}      profile the app writes at each sign-in
+//   payments/{utr}   a user's claim "I paid": document ID = the 12-digit UPI transaction ID,
+//                    so the same transaction ID can only ever be claimed once
+//   members/{uid}    membership (validUntil); only an admin can grant or change it
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function own(uid) { return signedIn() && request.auth.uid == uid; }
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+
+    match /admins/{uid} {
+      allow get: if own(uid);
+      allow list, write: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if own(uid) || isAdmin();
+      allow create, update: if own(uid)
+        && request.resource.data.keys().hasOnly(['email', 'name', 'photo', 'lastLogin'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.lastLogin == request.time;
+      allow delete: if false;
+    }
+
+    match /members/{uid} {
+      allow read: if own(uid) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /payments/{utr} {
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn()
+        && utr.matches('[0-9]{12}')
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'name', 'utr', 'amount', 'plan', 'status', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.utr == utr
+        && request.resource.data.amount is number
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-/* Smoke test: for every form, fill the sample case and export Word + PDF in every
+/* Smoke test (format): for every form, fill the sample case and export Word + PDF in every
    orientation; check each file is one page of the right size, and the app works offline.
    Usage:  python3 -m http.server 8000   (in the repo root, another terminal)
            node tests/smoke.js [http://localhost:8000/] [outDir]                         */
@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const URL_ = process.argv[2] || 'http://localhost:8000/';
+const APP = URL_ + '?nogate'; // localhost-only switch: skip sign-in for format tests
 const OUT = process.argv[3] || path.join(__dirname, 'out');
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -27,12 +28,12 @@ const pdfInfo = buf => {
   page.on('pageerror', e => errs.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
 
-  await page.goto(URL_);
+  await page.goto(APP);
   await page.waitForSelector('#formList .card');
   const forms = await page.evaluate(() => window.CF.forms.map(f => ({ id: f.id, page: f.page, orientations: f.orientations })));
   for (const f of forms) {
     console.log('Form:', f.id);
-    await page.goto(URL_ + '#/f/' + f.id);
+    await page.goto(APP + '#/f/' + f.id);
     await page.waitForSelector('#paper svg');
     await page.click('#btnClear'); await page.click('#confirm [data-yes]');
     await page.click('#btnSample'); await page.waitForTimeout(200);
@@ -59,7 +60,7 @@ const pdfInfo = buf => {
   // phone layout
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   const pp = await phone.newPage();
-  await pp.goto(URL_); await pp.waitForSelector('#formList .card');
+  await pp.goto(APP); await pp.waitForSelector('#formList .card');
   await pp.screenshot({ path: path.join(OUT, 'phone-home.png') });
   await pp.click('#formList .card'); await pp.waitForSelector('#fields textarea');
   await pp.click('#btnSample'); await pp.waitForTimeout(200);

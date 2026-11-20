@@ -1,6 +1,6 @@
 {
-  "name": "Court Forms",
-  "short_name": "Court Forms",
+  "name": "i Court Forms",
+  "short_name": "i Court Forms",
   "description": "Fill court forms and export Word & PDF in the exact printed format.",
   "start_url": "./",
   "scope": "./",

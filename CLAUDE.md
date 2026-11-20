@@ -1,21 +1,29 @@
-# Court Forms — web app (context for Claude Code)
+# i Court Forms — web app (context for Claude Code)
 
 ## What this is
-An offline web app (PWA) for filling routine court forms and exporting them as Word (.docx) and PDF in the exact printed format. Users: law interns, students, junior advocates, clerks. Starts with District Courts Jalandhar; other Punjab districts later.
+An offline web app (PWA) for filling routine court forms and exporting them as Word (.docx) and PDF in the exact printed format. Users: law interns, students, junior advocates, clerks. Starts with District Courts Jalandhar; other Punjab districts later. App name: **i Court Forms**.
 Owner: Mohammad Rafiq Azad, Advocate, Jalandhar.
 
 Forms so far: **Form Nakal** (Form for Copies — application for certified / uncertified copies).
 
+Access: Google sign-in (Firebase Auth) → ₹100 / 365-day membership paid by UPI (Google Pay deep link + QR) → user submits the 12-digit UPI transaction ID → owner approves in `admin.html` → app unlocks live. Owner setup steps are in `SETUP.md` (Hinglish).
+
 ## Files
-- `index.html` — page shell: home screen (form list) and form screen (fields, preview, export buttons).
+- `index.html` — gate screens (`#gate`: loading, setup, login, pay, pending, offline), home (form list), form screen.
 - `css/app.css` — styles. Mobile-first: under 820px the form screen has Fill / Preview tabs and a fixed bottom bar with the export buttons.
-- `js/engine.js` — the rendering engine shared by all forms (`CF.engine`: `layout`, `svg`, `pdf`, `docx`) and helpers (`CF.util`: `P`, `linesOf`, `clean`, `cellList`).
+- `js/config.js` — owner settings: Firebase web config, UPI ID, amount, days, support WhatsApp. Not secret.
+- `js/gate.js` — sign-in + membership gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Caches an active membership in localStorage (`icf-member-v1`) so the app opens offline. Listens live to `members/{uid}` and the user's `payments`.
+- `js/engine.js` — rendering engine shared by all forms (`CF.engine`: `layout`, `svg`, `pdf`, `docx`) and helpers (`CF.util`: `P`, `linesOf`, `clean`, `cellList`).
 - `js/app.js` — app shell: hash routing (`#/` home, `#/f/<id>` a form), field rendering, autosave, export, Web Share.
 - `forms/<id>.js` — one file per form. Each calls `CF.register({...})`.
-- `lib/jspdf.umd.min.js` (jsPDF 2.x) and `lib/docx.min.js` (docx 9.x browser build) — bundled locally so the app needs no internet. Do not replace them with CDN links.
-- `manifest.webmanifest`, `sw.js`, `icons/` — installable PWA that works offline.
-- `tests/smoke.js` — Playwright check of every form (see Testing).
-- `.nojekyll` — tells GitHub Pages to serve files as they are.
+- `admin.html`, `js/admin.js` — admin panel (pending payments approve/reject, all payments, members extend/revoke, users give access).
+- `firestore.rules` — security. Collections: `admins/{uid}` (made by hand in console), `users/{uid}` (profile written at sign-in), `payments/{utr}` (doc ID = 12-digit UTR, so one UTR can be claimed once; users create `status: 'pending'` only), `members/{uid}` (`validUntil` Timestamp; admin-only writes).
+- `firebase.json`, `firestore.indexes.json` — Firebase Hosting (serves the repo root, ignores docs/tests) and emulator ports.
+- `terms.html`, `privacy.html` — drafts with [placeholders]; the owner must complete them.
+- `lib/` — bundled so the app needs no CDN: jsPDF 2.x, docx 9.x, Firebase compat SDK 13.1.0 (app, auth, firestore), qrcode-generator 2.0.4. Do not replace with CDN links.
+- `manifest.webmanifest`, `sw.js`, `icons/` — installable PWA, offline. `sw.js` never intercepts cross-origin or `/__/` (Firebase) requests.
+- `tests/smoke.js` (format), `tests/gate-e2e.js` (sign-in/payment/admin against emulators).
+- `.nojekyll` — for GitHub Pages, if used.
 
 ## How a form works (one model → three outputs)
 A form config (`forms/nakal.js` is the reference) has:
@@ -24,9 +32,9 @@ A form config (`forms/nakal.js` is the reference) has:
 - `title` — `{ text, size, top }` (top in points)
 - `grid` — `{ left, top, cols: [...], rows: [...] }` in DXA (1/1440 inch). Every grid square must be covered by exactly one cell.
 - `orientations` — e.g. `['landscape', 'portrait']`; `defaultOrient`
-- `fields` — inputs shown on the left: `{ group }` headings, or `{ key, label, type: 'text'|'area'|'choice', rows, options, hint, placeholder, today }`
+- `fields` — inputs: `{ group }` headings, or `{ key, label, type: 'text'|'area'|'choice', rows, options, hint, placeholder, today }`
 - `sample` — demo data for the "Sample case" button
-- `build(data)` — returns the cells: use `CF.util.cellList()` → `add(col, row, colSpan, rowSpan, paragraphs, { rot, align, valign, border, gap })`; paragraphs are `P(text, size, { bold, strike })`. `rot: true` = vertical text, bottom-to-top.
+- `build(data)` — returns the cells: `CF.util.cellList()` → `add(col, row, colSpan, rowSpan, paragraphs, { rot, align, valign, border, gap })`; paragraphs are `P(text, size, { bold, strike })`. `rot: true` = vertical text, bottom-to-top.
 - `fileBase(data, orient)` — file name without extension
 - optional `docx` — overrides for Word page margins (`titleAfter`, `titleCol`, `portraitMargin`, `landMargin`)
 
@@ -35,24 +43,29 @@ The engine lays the cells out once (`layout`) and the three renderers draw from 
 ## Adding a new form
 1. Ask the owner for the printed format (photo / scan / Word file). **Never invent a format.**
 2. Copy `forms/nakal.js` to `forms/<id>.js`, set the grid, fields, sample and `build()`.
-3. Add `<script src="forms/<id>.js"></script>` in `index.html` (before `js/app.js`) and `./forms/<id>.js` to `FILES` in `sw.js`.
-4. Remove its name from `PLANNED` in `js/app.js` if it was listed there.
+3. Add `<script src="forms/<id>.js"></script>` in `index.html` (after `js/engine.js`, before `js/gate.js`) and `./forms/<id>.js` to `FILES` in `sw.js`.
+4. Remove its name from `PLANNED` in `js/app.js` if listed there.
 5. Bump `VERSION` in `sw.js`, run the tests.
 
 ## Format rules (important)
 - The layout must stay identical to the printed court form: same boxes, borders, rotated headings, row/column sizes, page size, one page.
-- After any change, export Word and PDF in every orientation and check each is one page and matches the preview (`tests/smoke.js` does the export and page checks; also look at the files).
+- After any change, export Word and PDF in every orientation and check each is one page and matches the preview.
 - Only English text works in the PDF right now (jsPDF built-in Times font). Punjabi/Hindi would need an embedded Unicode font (e.g. Noto Sans Gurmukhi).
 
 ## Testing
+Localhost-only switches (ignored on the live site): `?nogate` skips the gate; `?emulator` uses the Firebase emulators with project `demo-icf`.
 ```
-python3 -m http.server 8000          # in the repo root
-node tests/smoke.js http://localhost:8000/ /tmp/cf-out
+firebase emulators:start --only auth,firestore --project demo-icf   # needs Java
+python3 -m http.server 8002
+node tests/smoke.js http://localhost:8002/ /tmp/cf-out              # format: exports, 1 page, size, phone, offline
+node tests/gate-e2e.js http://localhost:8002/ /tmp/cf-e2e           # login → pay → rules → admin approve/reject/revoke → unlock, offline
 ```
-It fills the sample case of every form, exports Word + PDF in every orientation, checks one page and the page size, checks the phone layout has no sideways scroll, and that the app reloads offline. Screenshots and files go to the out folder.
+`gate-e2e.js` signs in with emulator test credentials (the real Google popup needs apis.google.com).
 
 ## Deploy
-GitHub Pages: Settings → Pages → Deploy from a branch → branch with these files, folder `/ (root)`. Bump `VERSION` in `sw.js` on every change, or installed apps keep the old copy.
+Firebase Hosting (recommended; works with a private repo, same domain as auth): `firebase use --add`, `firebase deploy` (hosting + rules). Bump `VERSION` in `sw.js` on every change. GitHub Pages also works if the repo is public; add the domain to Auth → Authorized domains.
 
-## Next steps (owner's plan)
-More Jalandhar forms (Vakalatnama, Memo of appearance, Exemption, Adjournment, Personal bond, Surety bond, …), then other Punjab districts; English + Punjabi; later a ₹100/year membership and Play Store (same code packaged with Capacitor).
+## Known limits / next steps
+- Payment approval is manual (free Spark plan, no fees). Automatic: Razorpay + a Cloud Function webhook (needs Blaze plan and Razorpay KYC).
+- The gate is client-side: form code ships to every browser, so a technical user could bypass it. Stronger: serve paid form configs from Firestore/Storage readable only by members.
+- More Jalandhar forms, then other Punjab districts; English + Punjabi; Play Store later (same code packaged with Capacitor; Play Billing there).
