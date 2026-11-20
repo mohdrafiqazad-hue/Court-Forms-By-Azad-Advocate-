@@ -4,10 +4,10 @@
 window.ICF_CONFIG = {
   // Firebase console → Project settings → General → Your apps → Web app → "SDK setup and configuration" → Config
   firebase: {
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    appId: '',
+    apiKey: 'AIzaSyDK9UNrw7x-l8WKRRCgs9LCnQX1RXo4DTg',
+    authDomain: 'i-court-forms.firebaseapp.com',
+    projectId: 'i-court-forms',
+    appId: '1:131820138603:web:e4b0d904a4b42861acc12e',
   },
 
   // Membership payment by UPI (Google Pay or any UPI app)

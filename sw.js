@@ -1,6 +1,6 @@
 // Service worker: caches the whole app so it runs fully offline after the first visit.
 // Bump VERSION whenever any file changes, so users get the update.
-const VERSION = 'icf-v2';
+const VERSION = 'icf-v3';
 const FILES = [
   './', './index.html', './css/app.css',
   './js/config.js', './js/engine.js', './js/gate.js', './js/app.js', './forms/nakal.js',
