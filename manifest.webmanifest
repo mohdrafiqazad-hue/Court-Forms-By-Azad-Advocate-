@@ -1,0 +1,15 @@
+{
+  "name": "Court Forms",
+  "short_name": "Court Forms",
+  "description": "Fill court forms and export Word & PDF in the exact printed format.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f1eb",
+  "theme_color": "#7a2e1f",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

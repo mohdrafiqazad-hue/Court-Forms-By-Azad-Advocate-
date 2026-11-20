@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7a2e1f">
+<meta name="description" content="Fill routine court forms, see a live preview, and export Word and PDF in the exact printed format. Works offline.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+<title>Court Forms</title>
+</head>
+<body>
+
+<!-- Home: list of forms -->
+<section id="home" class="home" hidden>
+  <header class="home-head">
+    <h1>Court Forms</h1>
+    <p>Fill the blanks, check the preview, export Word &amp; PDF in the exact court format. Works offline.</p>
+  </header>
+  <h2 class="list-h">Available forms</h2>
+  <div id="formList" class="cards"></div>
+  <h2 class="list-h">Coming soon</h2>
+  <ul id="planned" class="planned"></ul>
+  <p class="foot">Always check the exported form before filing.</p>
+</section>
+
+<!-- Form screen -->
+<section id="formView" class="fv" data-tab="fill" hidden>
+  <header class="fv-head">
+    <a href="#/" class="back" aria-label="All forms">&#8592;</a>
+    <div class="fv-title"><strong id="fTitle"></strong><small id="fSub"></small></div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="btnWord">Word</button>
+      <button type="button" class="btn primary" id="btnPdf">PDF</button>
+      <button type="button" class="btn" id="btnShare" hidden>Share PDF</button>
+    </div>
+  </header>
+  <nav class="tabs" aria-label="Screen">
+    <button type="button" data-tab="fill">Fill</button>
+    <button type="button" data-tab="preview">Preview</button>
+  </nav>
+  <div class="work">
+    <aside class="pane-fill">
+      <div class="mini">
+        <button type="button" class="btn sm" id="btnSample">Sample case</button>
+        <button type="button" class="btn sm" id="btnClear">New form</button>
+        <span id="count"></span>
+      </div>
+      <div id="fields"></div>
+    </aside>
+    <main class="pane-preview">
+      <div class="tools">
+        <div class="seg" role="group" aria-label="Page orientation" id="orientSeg"></div>
+      </div>
+      <div id="stage"><div id="paper"></div></div>
+    </main>
+  </div>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="confirm" hidden><div class="box" role="dialog" aria-modal="true"><p></p><div class="row"><button class="btn" data-no>Cancel</button><button class="btn primary" data-yes>Yes</button></div></div></div>
+
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="lib/docx.min.js"></script>
+<script src="js/engine.js"></script>
+<script src="forms/nakal.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Offline support (works over http/https, e.g. GitHub Pages; ignored for file://)
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
