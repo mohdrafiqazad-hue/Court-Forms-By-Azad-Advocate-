@@ -42,27 +42,33 @@ Ye sab Firebase ke **free plan (Spark)** par chalta hai. Credit card ki zaroorat
 - `days`: `365` (ek payment kitne din chalegi)
 - `supportWhatsApp`: aapka WhatsApp number, country code ke saath, sirf ankde (jaise `919876543210`). Ye intezaar wali screen par dikhega. Khaali chhod sakte hain.
 
-## Step 6: Website online karein (Firebase Hosting, free)
-Ye ek baar kisi computer par karna hoga (Windows / Mac):
-1. https://nodejs.org se **Node.js (LTS)** install karein.
-2. Command Prompt / Terminal kholein:
-   ```
-   npm install -g firebase-tools
-   firebase login
-   ```
-3. Is repo ka folder download karein (GitHub → Code → Download ZIP → extract), aur us folder mein:
-   ```
-   firebase use --add        (apna project chunein, alias: default)
-   firebase deploy
-   ```
-4. Link milega: `https://<project-id>.web.app`. Yahi app ka link hai.
+## Step 6: Website online karein → https://i-court-forms.web.app (free)
+GitHub khud deploy karta hai (`.github/workflows/deploy.yml`). Har push par website aur database rules dono update hote hain, aur `sw.js` ka `VERSION` bhi apne aap badal jata hai. Bas ek baar **deploy key** deni hai:
 
-Firebase Hosting isliye behtar hai kyunki repo private rehte hue bhi chalta hai, aur Google login usi domain par sabse bharosemand chalta hai.
+**A. Hosting chalu karein:** Firebase console → **Build → Hosting → Get started** → Next, Next → **Continue to console**. (Commands wale steps chhod dein.)
 
-**Har badlav ke baad:** `sw.js` mein `VERSION` badlein (jaise `icf-v2` → `icf-v3`), phir `firebase deploy`.
+**B. Deploy key (service account) banayein:**
+1. Kholein: `https://console.cloud.google.com/iam-admin/serviceaccounts?project=i-court-forms`
+2. **+ Create service account** → naam: `github-deploy` → **Create and continue**.
+3. **Role:** `Firebase Admin` chunein → **Continue → Done**.
+4. List mein `github-deploy` par dabayein → **Keys** tab → **Add key → Create new key → JSON → Create**. Ek `.json` file download hogi.
+
+**C. Key GitHub mein daalein:**
+1. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**.
+2. Name: `FIREBASE_SERVICE_ACCOUNT`
+3. Secret: downloaded `.json` file ka **poora text** paste karein (file kisi text viewer mein kholein, Select all, Copy).
+4. **Add secret**. Phir phone se woh `.json` file delete kar dein.
+
+⚠ Ye key asli chaabi hai: kisi ko na bhejein, chat mein na daalein, repo mein file ki tarah upload na karein. Sirf GitHub Secret mein.
+
+**D. Deploy chalayein:** repo → **Actions** tab → **Deploy to Firebase** → **Run workflow**. 2–3 minute mein hara ✓ aayega, aur app `https://i-court-forms.web.app` par live hogi.
+
+Ab repo chahein toh wapas **private** kar sakte hain. Firebase Hosting ke liye public hona zaroori nahi.
+
+(Computer se bhi ho sakta hai: Node.js install karke `npm install -g firebase-tools`, `firebase login`, repo folder mein `firebase deploy`.)
 
 ## Step 7: Khud ko Admin banayein
-1. `https://<project-id>.web.app/admin.html` kholein → apne Google account se sign in karein.
+1. `https://i-court-forms.web.app/admin.html` kholein → apne Google account se sign in karein.
 2. Page kahega "This account is not an admin" aur aapka **UID** dikhayega → **Copy UID**.
 3. Firebase console → **Firestore Database → Data → + Start collection**:
    - Collection ID: `admins`
@@ -79,10 +85,10 @@ Firebase Hosting isliye behtar hai kyunki repo private rehte hue bhi chalta hai,
 - **Members** tab → "+365 days" (badhana) ya "Revoke" (band karna).
 
 ## Test kaise karein (live karne se pehle)
-1. `amount` thodi der ke liye `1` kar dein, deploy karein.
+1. `amount` thodi der ke liye `1` kar dein (GitHub par push hote hi deploy ho jayega).
 2. Doosre Google account se app kholein → ₹1 Google Pay se bhejein → transaction ID daalein.
 3. Admin page se Approve karein → app khulni chahiye.
-4. Wapas `amount: 100` karein, `VERSION` badlein, deploy karein.
+4. Wapas `amount: 100` kar dein.
 
 ## Free plan ki seemayein (lagbhag)
 | Cheez | Free seema | Aapke liye matlab |

@@ -23,6 +23,7 @@ Access: Google sign-in (Firebase Auth) → ₹100 / 365-day membership paid by U
 - `lib/` — bundled so the app needs no CDN: jsPDF 2.x, docx 9.x, Firebase compat SDK 13.1.0 (app, auth, firestore), qrcode-generator 2.0.4. Do not replace with CDN links.
 - `manifest.webmanifest`, `sw.js`, `icons/` — installable PWA, offline. `sw.js` never intercepts cross-origin or `/__/` (Firebase) requests.
 - `tests/smoke.js` (format), `tests/gate-e2e.js` (sign-in/payment/admin against emulators).
+- `.github/workflows/deploy.yml` — deploys to Firebase Hosting + rules on push.
 - `.nojekyll` — for GitHub Pages, if used.
 
 ## How a form works (one model → three outputs)
@@ -63,7 +64,8 @@ node tests/gate-e2e.js http://localhost:8002/ /tmp/cf-e2e           # login → 
 `gate-e2e.js` signs in with emulator test credentials (the real Google popup needs apis.google.com).
 
 ## Deploy
-Firebase Hosting (recommended; works with a private repo, same domain as auth): `firebase use --add`, `firebase deploy` (hosting + rules). Bump `VERSION` in `sw.js` on every change. GitHub Pages also works if the repo is public; add the domain to Auth → Authorized domains.
+Live site: **https://i-court-forms.web.app** (Firebase project `i-court-forms`, see `.firebaserc`).
+`.github/workflows/deploy.yml` deploys hosting and then `firestore.rules` on every push to `main` / `ccr-1ddb94dd-s0x9y0` (or by hand: Actions → Deploy to Firebase → Run workflow). It stamps `VERSION` in `sw.js` with the commit SHA, so installed apps update. Needs the repo secret `FIREBASE_SERVICE_ACCOUNT` (service account JSON with the Firebase Admin role); without it the job skips. Manual alternative: `firebase deploy`.
 
 ## Known limits / next steps
 - Payment approval is manual (free Spark plan, no fees). Automatic: Razorpay + a Cloud Function webhook (needs Blaze plan and Razorpay KYC).

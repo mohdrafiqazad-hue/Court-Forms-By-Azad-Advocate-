@@ -1,0 +1,64 @@
+# Deploys i Court Forms to Firebase Hosting (https://i-court-forms.web.app) and
+# publishes firestore.rules on every push, or by hand from the Actions tab.
+# Needs one repository secret: FIREBASE_SERVICE_ACCOUNT (the service account JSON key, see SETUP.md).
+name: Deploy to Firebase
+
+on:
+  push:
+    branches: [main, ccr-1ddb94dd-s0x9y0]
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: i-court-forms
+      FIREBASE_TOOLS: firebase-tools@15.35.0
+    steps:
+      - name: Check the deploy key
+        id: key
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::notice::FIREBASE_SERVICE_ACCOUNT secret is not set yet - skipping deploy (see SETUP.md)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.ok == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.ok == 'true'
+        with:
+          node-version: 22
+
+      - name: Stamp the app version (so installed apps pick up the update)
+        if: steps.key.outputs.ok == 'true'
+        run: sed -i "s/^const VERSION = '[^']*';/const VERSION = 'icf-${GITHUB_SHA::8}';/" sw.js && grep "^const VERSION" sw.js
+
+      - name: Deploy website
+        if: steps.key.outputs.ok == 'true'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: npx --yes "$FIREBASE_TOOLS" deploy --only hosting --project "$PROJECT" --non-interactive
+
+      - name: Publish database rules
+        if: steps.key.outputs.ok == 'true'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: npx --yes "$FIREBASE_TOOLS" deploy --only firestore:rules --project "$PROJECT" --non-interactive
+
+      - name: Remove the key file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
