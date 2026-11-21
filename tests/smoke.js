@@ -86,6 +86,65 @@ const pdfInfo = buf => {
   await page.selectOption('#home select.langsel', 'en');
   await page.click('#formList .card'); await page.waitForSelector('#paper svg');
 
+  // My cases, My details, suggestions, backup
+  console.log('Saved cases');
+  const yes = async () => { if (await page.isVisible('#confirm')) await page.click('#confirm [data-yes]'); };
+  const val = k => page.inputValue('#f_' + k);
+  await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#fields textarea');
+  await page.click('#btnClear'); await yes();
+  await page.click('#btnSample'); await yes();
+  await page.click('#btnSaveCase'); await page.waitForTimeout(150);
+  check((await page.textContent('#caseChip')).includes('Rinki vs Surinder Singh'), 'Save: case saved with a name from the parties and case no.');
+  await page.fill('#f_purpose', 'For filing appeal'); await page.click('#btnSaveCase');
+  check(await page.evaluate(() => CF.store.cases.all().length) === 1, 'Save again updates the same case');
+  await page.click('#btnClear'); await yes();
+  check(await page.isHidden('#caseChip') && (await val('plaintiff')) === '', 'New form: empty, not tied to the case');
+  const chip = await page.$('[data-recent="court"] .chip');
+  check(!!chip, 'suggestions of earlier values appear under fields');
+  if (chip) { await chip.click(); check((await val('court')).startsWith('Sh. Parteek Gupta'), 'tapping a suggestion fills the field'); }
+  await page.click('#btnCases'); await page.waitForSelector('#sheet:not([hidden]) .caserow');
+  check((await page.$$('#caseList .caserow')).length === 1, 'My cases lists the saved case');
+  await page.click('#caseList [data-case-open]'); await yes();
+  check((await val('plaintiff')) === 'Rinki' && (await val('purpose')) === 'For filing appeal', 'Open brings back every detail');
+  await page.click('#btnCases'); await page.click('#caseList [data-case-copy]'); await yes();
+  check(await page.isHidden('#caseChip') && (await val('plaintiff')) === 'Rinki', 'Copy: same details as a new, unsaved case');
+  await page.fill('#f_reqDate', '01.01.2027'); await page.click('#btnSaveCase');
+  check(await page.evaluate(() => CF.store.cases.all().length) === 2, 'the copy saves as a second case');
+  await page.click('#btnCases'); await page.fill('#caseSearch', '01.01.2027'); await page.waitForTimeout(100);
+  check((await page.$$('#caseList .caserow')).length === 1, 'search finds a case by any detail');
+  await page.click('#caseList [data-case-del]'); await yes();
+  check(await page.evaluate(() => CF.store.cases.all().length) === 1, 'Delete removes a case');
+  await page.click('[data-sheet-close]'); await page.click('#btnCases'); await page.click('#caseList [data-case-open]'); await yes();
+  await page.click('#btnSaveNew');
+  check(await page.evaluate(() => CF.store.cases.all().length) === 2, 'Save as a new case keeps the old case and adds a new one');
+  await page.evaluate(() => { const c = CF.store.cases.all()[0]; CF.store.cases.remove(c.id); });
+  await page.click('#btnCases');
+  await page.click('[data-sheet-close]');
+  console.log('My details');
+  await page.click('#btnMine'); await page.click('#btnSaveMine');
+  check((await page.textContent('#sheetBody')).includes('Mohammad Rafiq Azad'), 'Save these as my details shows what was saved'); await page.click('[data-sheet-close]');
+  await page.click('#btnClear'); await yes();
+  await page.click('#btnMine'); await page.click('#btnFillMine');
+  check((await val('aName')).startsWith('Mohammad Rafiq Azad') && (await val('aDistrict')) === 'Jalandhar' && (await val('plaintiff')) === '', 'Fill my details fills only your own details');
+  console.log('Home and backup');
+  await page.goto(APP + '#/'); await page.waitForSelector('#formList .card');
+  check(await page.isVisible('#recentCases') && (await page.$$('#recentList .caserow')).length === 1, 'home shows My cases');
+  await page.click('#recentList .caserow'); await yes(); await page.waitForSelector('#formView:not([hidden])');
+  check((await val('plaintiff')) === 'Rinki', 'a case opens from the home screen');
+  await page.goto(APP + '#/'); await page.click('#btnAllCases');
+  const [bk] = await Promise.all([page.waitForEvent('download'), page.click('#btnBackup')]);
+  const bkFile = path.join(OUT, bk.suggestedFilename()); await bk.saveAs(bkFile);
+  const bkJson = JSON.parse(fs.readFileSync(bkFile, 'utf8'));
+  check(bkJson.app === 'i Court Forms' && bkJson.cases.length === 1 && !!bkJson.profile.aName, 'backup file has the cases and my details');
+  const fresh = await browser.newContext(); const fp = await fresh.newPage();
+  await fp.goto(APP + '#/f/nakal'); await fp.waitForSelector('#fields textarea');
+  await fp.click('#btnCases'); await fp.setInputFiles('#restoreFile', bkFile); await fp.waitForTimeout(300);
+  check((await fp.$$('#caseList .caserow')).length === 1 && await fp.evaluate(() => !!CF.store.profile.get().aName), 'Restore on another phone brings everything back');
+  await fp.setInputFiles('#restoreFile', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"hello":1}') }); await fp.waitForTimeout(200);
+  check((await fp.textContent('#toast')).includes('not an i Court Forms backup'), 'a wrong file is refused');
+  await fresh.close();
+  await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#paper svg');
+
   // phone layout
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   const pp = await phone.newPage();

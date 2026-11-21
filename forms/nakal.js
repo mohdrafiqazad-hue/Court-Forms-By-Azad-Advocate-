@@ -24,18 +24,18 @@
     { key: 'decision', label: 'Date of Decision: Original or Appeal', type: 'area', rows: 2 },
     { key: 'purpose', label: 'Purpose for which Copy is Required', type: 'area', rows: 1 },
     { key: 'copies', label: 'Details of Copies Required', type: 'area', rows: 4 },
-    { key: 'seal', label: 'Seal or Thumb Impression or Signature of Applicant', type: 'area', rows: 2 },
+    { key: 'seal', profile: true, label: 'Seal or Thumb Impression or Signature of Applicant', type: 'area', rows: 2 },
 
     { group: "Applicant's complete address" },
-    { key: 'aName', label: "Applicant's Name", type: 'area', rows: 2 },
-    { key: 'aFather', label: "Father's Name", type: 'text' },
-    { key: 'aWork', label: 'Work', type: 'text' },
-    { key: 'aProfession', label: 'Profession', type: 'area', rows: 3 },
-    { key: 'aPO', label: 'Post Office', type: 'text' },
-    { key: 'aPS', label: 'Police Station', type: 'text' },
-    { key: 'aTehsil', label: 'Tehsil', type: 'text' },
-    { key: 'aDistrict', label: 'District', type: 'text' },
-    { key: 'aScribe', label: 'Signature of Scribe', type: 'text' },
+    { key: 'aName', profile: true, label: "Applicant's Name", type: 'area', rows: 2 },
+    { key: 'aFather', profile: true, label: "Father's Name", type: 'text' },
+    { key: 'aWork', profile: true, label: 'Work', type: 'text' },
+    { key: 'aProfession', profile: true, label: 'Profession', type: 'area', rows: 3 },
+    { key: 'aPO', profile: true, label: 'Post Office', type: 'text' },
+    { key: 'aPS', profile: true, label: 'Police Station', type: 'text' },
+    { key: 'aTehsil', profile: true, label: 'Tehsil', type: 'text' },
+    { key: 'aDistrict', profile: true, label: 'District', type: 'text' },
+    { key: 'aScribe', profile: true, label: 'Signature of Scribe', type: 'text' },
   ];
 
   const SAMPLE = {
@@ -172,6 +172,16 @@
     return cells;
   }
 
+  // Name shown in "My cases": parties and case number
+  function caseTitle(d) {
+    const first = s => clean(s).split('\n')[0].trim();
+    const pl = first(d.plaintiff), df = first(d.defendant);
+    const cn = (clean(d.nature).match(/[A-Z]{2,}[\/\-][\w\/\-]+/) || [''])[0];
+    let t = pl && df ? pl + ' vs ' + df : (pl || df);
+    if (cn) t = t ? t + ' · ' + cn : cn;
+    return t.slice(0, 120);
+  }
+
   function fileBase(d, orient) {
     const part = s => clean(s).split('\n')[0].replace(/[^A-Za-z0-9 ]+/g, ' ').trim().replace(/ +/g, '_');
     const pl = part(d.plaintiff), df = part(d.defendant);
@@ -199,6 +209,7 @@
     sample: SAMPLE,
     sampleLabel: 'Rinki vs Surinder Singh',
     build,
+    caseTitle,
     fileBase,
   });
 })();

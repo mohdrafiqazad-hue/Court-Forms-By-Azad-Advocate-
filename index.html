@@ -92,6 +92,10 @@
       <span class="tc-body"><strong data-i18n="installTitle">Install the app</strong><span data-i18n="installSub">Add i Court Forms to your home screen. Opens like an app and works offline.</span><span class="ios-steps" data-install-ios hidden data-i18n="iosSteps">On iPhone: tap Share at the bottom, then “Add to Home Screen”.</span></span>
       <button type="button" class="btn primary sm" data-install-btn hidden data-i18n="installBtn">Install</button>
     </div>
+    <div id="recentCases" hidden>
+      <div class="list-h-row"><h2 class="list-h" data-i18n="myCases">My cases</h2><button type="button" class="linkbtn" id="btnAllCases" data-i18n="seeAll">See all</button></div>
+      <div id="recentList" class="caselist"></div>
+    </div>
     <h2 class="list-h" data-i18n="forms">Forms</h2>
     <div id="formList" class="cards"></div>
     <h2 class="list-h" data-i18n="soonH">Coming soon</h2>
@@ -141,6 +145,12 @@
   </nav>
   <div class="work">
     <aside class="pane-fill">
+      <div class="mini tools-main">
+        <button type="button" class="btn sm primary" id="btnSaveCase"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" d="M5 3h11l3 3v15H5zM8 3v6h8V3M8 21v-7h8v7"/></svg><span data-i18n="saveCase">Save</span></button>
+        <button type="button" class="btn sm" id="btnCases"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" d="M3 6h7l2 2h9v11H3z"/></svg><span data-i18n="myCases">My cases</span></button>
+        <button type="button" class="btn sm" id="btnMine"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 21c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></svg><span data-i18n="myDetails">My details</span></button>
+      </div>
+      <p id="caseChip" class="casechip" hidden></p>
       <div class="mini">
         <button type="button" class="btn sm" id="btnSample" data-i18n="sample">Sample case</button>
         <button type="button" class="btn sm" id="btnClear" data-i18n="newForm">New form</button>
@@ -160,6 +170,11 @@
 </section>
 
 <div id="updateBar" class="updatebar" hidden><span data-i18n="updateReady">New version available</span><button type="button" class="btn sm" id="btnReload" data-i18n="reload">Refresh</button></div>
+<div id="sheet" class="sheet" hidden><div class="sheet-box" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <header><h2 id="sheetTitle"></h2><button type="button" class="sheet-x" data-sheet-close data-i18n-aria="close" aria-label="Close">&times;</button></header>
+  <div id="sheetBody"></div>
+</div></div>
+<input type="file" id="restoreFile" accept="application/json,.json" hidden>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="confirm" hidden><div class="box" role="dialog" aria-modal="true"><p></p><div class="row"><button class="btn" data-no data-i18n="cancel">Cancel</button><button class="btn primary" data-yes data-i18n="yes">Yes</button></div></div></div>
 
@@ -170,6 +185,7 @@
 <script src="lib/firebase-firestore-compat.js"></script>
 <script src="js/config.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/store.js"></script>
 <script src="js/install.js"></script>
 <script src="js/engine.js"></script>
 <script src="forms/nakal.js"></script>

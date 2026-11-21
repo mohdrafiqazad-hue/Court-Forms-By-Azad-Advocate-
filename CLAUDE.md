@@ -14,6 +14,7 @@ Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Fir
 - `js/config.js` — owner settings: Firebase web config, support WhatsApp. Not secret.
 - `js/gate.js` — sign-in + approval gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Writes `users/{uid}` at sign-in (that is the request), listens live to `members/{uid}`. Caches an approval in localStorage (`icf-member-v1`, at most 30 days) so the app opens offline. Admins (detected by listing `users`, which the rules only allow for admins) always get in.
 - `js/i18n.js` — interface language English / हिंदी / ਪੰਜਾਬੀ (`CF.t(key, vars)`, `CF.i18n.ft(form, text)`, `data-i18n*` attributes, choice saved in localStorage `icf-lang`, pickers on the sign-in screen and in the app bar). Every new UI text needs all three languages in its dictionary; every form needs `tr.hi` / `tr.pa` for its name, desc, court, groups, labels, hints and option texts (`tests/smoke.js` checks both). The printed Word/PDF form always stays in English.
+- `js/store.js` — data kept on the device only (`CF.store`): `cases` ("My cases": saved forms, localStorage `icf-cases-v1`), `profile` ("My details": values of fields marked `profile: true`, shared by all forms, `icf-profile-v1`), `history` (last 6 values per form field, shown as one-tap suggestions, `icf-history-v1`) and `backup` (download / restore JSON; restore keeps only string values and the newer copy of a case). The form screen has Save (updates the open case; "Save as a new case" in the case chip), My cases (open / copy / delete / search, backup / restore) and My details (fill / save); home lists the latest cases.
 - `js/engine.js` — rendering engine shared by all forms (`CF.engine`: `layout`, `svg`, `pdf`, `docx`) and helpers (`CF.util`: `P`, `linesOf`, `clean`, `cellList`).
 - `js/app.js` — app shell: hash routing (`#/` home, `#/f/<id>` a form), field rendering, autosave, export, Web Share.
 - `forms/<id>.js` — one file per form. Each calls `CF.register({...})`.
@@ -36,7 +37,8 @@ A form config (`forms/nakal.js` is the reference) has:
 - `title` — `{ text, size, top }` (top in points)
 - `grid` — `{ left, top, cols: [...], rows: [...] }` in DXA (1/1440 inch). Every grid square must be covered by exactly one cell.
 - `orientations` — e.g. `['landscape', 'portrait']`; `defaultOrient`
-- `fields` — inputs: `{ group }` headings, or `{ key, label, type: 'text'|'area'|'choice', rows, options, hint, placeholder, today }`
+- `fields` — inputs: `{ group }` headings, or `{ key, label, type: 'text'|'area'|'choice', rows, options, hint, placeholder, today, profile }` (`profile: true` = the user's own details, filled by "My details"; reuse the same keys across forms, e.g. `aName`, `aDistrict`)
+- `caseTitle(data)` — name shown in My cases (e.g. parties and case no.)
 - `sample` — demo data for the "Sample case" button
 - `tr` — `{ hi: { 'English text': 'हिंदी' }, pa: { … } }` for the app screen (name, desc, court, groups, labels, hints, option texts)
 - `build(data)` — returns the cells: `CF.util.cellList()` → `add(col, row, colSpan, rowSpan, paragraphs, { rot, align, valign, border, gap })`; paragraphs are `P(text, size, { bold, strike })`. `rot: true` = vertical text, bottom-to-top.

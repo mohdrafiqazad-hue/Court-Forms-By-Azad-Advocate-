@@ -13,6 +13,13 @@ Abhi ka form: **Form Nakal** (Form for Copies), District Courts Jalandhar. Aage 
 
 Live: **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/** (GitHub Pages; Firebase par bhi: i-court-forms.web.app) · Setup ki poori jaankari: **[SETUP.md](SETUP.md)**
 
+## Mere Case aur Meri Jaankari
+- **Save:** bhara hua form naam ke saath (jaise "Rinki vs Surinder Singh · COMA/102/2022") **Mere Case** mein save hota hai. Dobara Save karne par wahi case update hota hai. Case ke naam ke saath **"Save as a new case"** dabane par naya case banta hai.
+- **Mere Case:** list se case **kholein, copy karein** (wahi details, nayi tareekh) ya **hatayein**. Kisi bhi detail se khoj sakte hain. Home par aakhri case dikhte hain.
+- **Meri Jaankari:** apna naam, chamber ka pata, zila wagaira ek baar save karein, phir har form mein ek tap se bhar jaata hai.
+- **Pichhli entries:** har khane ke neeche pehle bhari hui cheezein (court, judge, purpose…) chhote buttons mein aati hain, tap karte hi bhar jaati hain.
+- **Backup:** sab kuch sirf usi phone mein save hota hai (server par nahi). Mere Case → **Download backup** se file rakh lein, aur naye phone par **Restore backup** se wapas laayein.
+
 ## Bhasha
 App **English, हिंदी aur ਪੰਜਾਬੀ** mein chalti hai. Login screen par ya upar ki patti mein bhasha chunein; phone yaad rakhta hai. Form ke har khane ke neeche uska English naam bhi likha aata hai. **Court ka printed form (Word/PDF) hamesha English mein rehta hai**, isliye jaankari English mein hi bharein.
 
