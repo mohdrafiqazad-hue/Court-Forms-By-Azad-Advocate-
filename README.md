@@ -20,6 +20,11 @@ Live: **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/** (Gi
 - **Pichhli entries:** har khane ke neeche pehle bhari hui cheezein (court, judge, purpose…) chhote buttons mein aati hain, tap karte hi bhar jaati hain.
 - **Backup:** sab kuch sirf usi phone mein save hota hai (server par nahi). Mere Case → **Download backup** se file rakh lein, aur naye phone par **Restore backup** se wapas laayein.
 
+## Client Book, Diary, Sign aur Mohar
+- **Clients:** client ka naam, pita/pati ka naam, pata, thana, tehsil, zila, phone ek baar save. Form mein **Clients → "Fill in as"** se Plaintiff / Defendant / Applicant mein ek tap mein bhar jaata hai. **"Take from this form"** se form ki details se naya client banta hai.
+- **Agli tareekh (Diary):** saved case mein **Next date** aur kis liye (bahas, gawahi…) daalein. Home par **"Next dates"** (Aaj / Kal / X din mein), poori **Diary**, aur **Add to Google Calendar**.
+- **Sign aur mohar:** **My details** mein safed kaagaz par kiye sign aur mohar ki photo lagayein (safed hissa apne aap hat jaata hai). Form mein **"Put my signature / stamp in the Seal box" → Yes** chunne par woh Preview, Word aur PDF mein Seal wale khane mein lag jaata hai.
+
 ## Bhasha
 App **English, हिंदी aur ਪੰਜਾਬੀ** mein chalti hai. Login screen par ya upar ki patti mein bhasha chunein; phone yaad rakhta hai. Form ke har khane ke neeche uska English naam bhi likha aata hai. **Court ka printed form (Word/PDF) hamesha English mein rehta hai**, isliye jaankari English mein hi bharein.
 

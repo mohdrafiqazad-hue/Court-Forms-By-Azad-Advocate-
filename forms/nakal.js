@@ -25,6 +25,7 @@
     { key: 'purpose', label: 'Purpose for which Copy is Required', type: 'area', rows: 1 },
     { key: 'copies', label: 'Details of Copies Required', type: 'area', rows: 4 },
     { key: 'seal', profile: true, label: 'Seal or Thumb Impression or Signature of Applicant', type: 'area', rows: 2 },
+    { key: 'useSign', setting: true, label: 'Put my signature / stamp in the Seal box', type: 'choice', options: [['', 'No'], ['yes', 'Yes']], hint: 'Add them once in My details' },
 
     { group: "Applicant's complete address" },
     { key: 'aName', profile: true, label: "Applicant's Name", type: 'area', rows: 2 },
@@ -83,6 +84,10 @@
       'Purpose for which Copy is Required': 'नकल किस काम के लिए चाहिए',
       'Details of Copies Required': 'कौन-सी नकलें चाहिए (विवरण)',
       'Seal or Thumb Impression or Signature of Applicant': 'आवेदक की मोहर, अंगूठा या हस्ताक्षर',
+      'Put my signature / stamp in the Seal box': 'मोहर वाले खाने में मेरे हस्ताक्षर / मोहर लगाएँ',
+      'No': 'नहीं',
+      'Yes': 'हाँ',
+      'Add them once in My details': 'इन्हें एक बार “मेरी जानकारी” में लगाएँ',
       "Applicant's Name": 'आवेदक का नाम',
       "Father's Name": 'पिता का नाम',
       'Work': 'काम',
@@ -121,6 +126,10 @@
       'Purpose for which Copy is Required': 'ਨਕਲ ਕਿਸ ਕੰਮ ਲਈ ਚਾਹੀਦੀ ਹੈ',
       'Details of Copies Required': 'ਕਿਹੜੀਆਂ ਨਕਲਾਂ ਚਾਹੀਦੀਆਂ ਹਨ (ਵੇਰਵਾ)',
       'Seal or Thumb Impression or Signature of Applicant': 'ਬਿਨੈਕਾਰ ਦੀ ਮੋਹਰ, ਅੰਗੂਠਾ ਜਾਂ ਦਸਤਖ਼ਤ',
+      'Put my signature / stamp in the Seal box': 'ਮੋਹਰ ਵਾਲੇ ਖਾਨੇ ਵਿੱਚ ਮੇਰੇ ਦਸਤਖ਼ਤ / ਮੋਹਰ ਲਗਾਓ',
+      'No': 'ਨਹੀਂ',
+      'Yes': 'ਹਾਂ',
+      'Add them once in My details': 'ਇਹਨਾਂ ਨੂੰ ਇੱਕ ਵਾਰ “ਮੇਰੀ ਜਾਣਕਾਰੀ” ਵਿੱਚ ਲਗਾਓ',
       "Applicant's Name": 'ਬਿਨੈਕਾਰ ਦਾ ਨਾਮ',
       "Father's Name": 'ਪਿਤਾ ਦਾ ਨਾਮ',
       'Work': 'ਕੰਮ',
@@ -160,7 +169,7 @@
     ].forEach((h, i) => add(3 + i, 2, 1, 2, [P(h, HEAD)], { rot: true }));
     // r4 — particulars (rotated, like the headings)
     ['nature', 'plaintiff', 'defendant', 'claim', 'village', 'court', 'decision', 'purpose', 'copies', 'seal']
-      .forEach((k, i) => add(i, 4, 1, 1, dat(k), { rot: true }));
+      .forEach((k, i) => add(i, 4, 1, 1, dat(k), { rot: true, img: k === 'seal' && d.useSign === 'yes' ? d.__img : null }));
     // r5 — address title
     add(0, 5, 10, 1, [P("Applicant's Complete Address", BIG, { bold: true })]);
     // r6 — address headings; r7 — address particulars (rotated)
@@ -208,6 +217,13 @@
     tr: TR,
     sample: SAMPLE,
     sampleLabel: 'Rinki vs Surinder Singh',
+    // Client book: which form fields a saved client fills (client keys: name, father, occupation, address, po, ps, tehsil, district)
+    clientTargets: [
+      { label: 'Plaintiff or Complainant', map: { plaintiff: 'name' } },
+      { label: 'Defendant or Accused / Respondent', map: { defendant: 'name' } },
+      { label: "Applicant's complete address", fromForm: true,
+        map: { aName: 'name', aFather: 'father', aWork: 'occupation', aProfession: 'address', aPO: 'po', aPS: 'ps', aTehsil: 'tehsil', aDistrict: 'district' } },
+    ],
     build,
     caseTitle,
     fileBase,
