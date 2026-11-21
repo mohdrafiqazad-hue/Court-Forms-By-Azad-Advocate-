@@ -65,7 +65,7 @@ node tests/gate-e2e.js http://localhost:8002/ /tmp/cf-e2e           # login → 
 
 ## Deploy
 Live site: **https://i-court-forms.web.app** (Firebase project `i-court-forms`, see `.firebaserc`).
-`.github/workflows/deploy.yml` deploys hosting and then `firestore.rules` on every push to `main` / `ccr-1ddb94dd-s0x9y0` (or by hand: Actions → Deploy to Firebase → Run workflow). It stamps `VERSION` in `sw.js` with the commit SHA, so installed apps update. Needs the repo secret `FIREBASE_SERVICE_ACCOUNT` (service account JSON with the Firebase Admin role); without it the job skips. Manual alternative: `firebase deploy`.
+`.github/workflows/deploy.yml` deploys hosting and then `firestore.rules` on every push to `main` / `ccr-1ddb94dd-s0x9y0` (or by hand: Actions → Deploy to Firebase → Run workflow). It stamps `VERSION` in `sw.js` with the commit SHA, so installed apps update. Needs the repo secret `FIREBASE_SERVICE_ACCOUNT` (service account JSON with roles Firebase Admin, Service Usage Consumer and Firebase Rules Admin — the first alone gets 403s); without it the job skips. Manual alternative: `firebase deploy`.
 
 ## Known limits / next steps
 - Payment approval is manual (free Spark plan, no fees). Automatic: Razorpay + a Cloud Function webhook (needs Blaze plan and Razorpay KYC).

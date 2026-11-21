@@ -50,7 +50,7 @@ GitHub khud deploy karta hai (`.github/workflows/deploy.yml`). Har push par webs
 **B. Deploy key (service account) banayein:**
 1. Kholein: `https://console.cloud.google.com/iam-admin/serviceaccounts?project=i-court-forms`
 2. **+ Create service account** → naam: `github-deploy` → **Create and continue**.
-3. **Role:** `Firebase Admin` chunein → **Continue → Done**.
+3. **Roles** (teeno jodein, "+ Add another role" se): `Firebase Admin`, `Service Usage Consumer`, `Firebase Rules Admin` → **Continue → Done**. Nayi permission lagne mein 2–5 minute lag sakte hain.
 4. List mein `github-deploy` par dabayein → **Keys** tab → **Add key → Create new key → JSON → Create**. Ek `.json` file download hogi.
 
 **C. Key GitHub mein daalein:**
