@@ -2,7 +2,8 @@
    A form config builds ONE layout model (a list of table cells on a fixed grid).
    Three renderers read that same model, so preview, PDF and Word always match:
      svg()  — live SVG preview
-     pdf()  — vector PDF (jsPDF, Times)
+     pdf()  — vector PDF (jsPDF, Times); Punjabi / Hindi pages are drawn on a canvas (the browser
+              shapes Gurmukhi / Devanagari correctly) and placed in the PDF as one 300-dpi image
      docx() — editable Word file (docx.js: real table, merged cells, rotated text)
    Units: grid sizes in DXA (1/1440 inch = 1/20 pt); page and drawing in points. */
 (function () {
@@ -31,8 +32,43 @@
   const pt = v => v / 20;
   const PAD_H = 3.5, PAD_V = 2, LINE = 1.15;
 
+  // ------------------------------------------------------------ print languages & fonts
+  // English prints with Times (vector PDF). Punjabi / Hindi — or any Gurmukhi / Devanagari typed in a
+  // field — use the bundled Noto Serif fonts (lib/fonts, OFL) for the page, the preview and the PDF.
+  const PRINT_LANGS = ['en', 'pa', 'hi'];
+  const TIMES = "'Times New Roman', Times, 'Liberation Serif', serif";
+  const GUR = "'Noto Serif Gurmukhi'", DEV = "'Noto Serif Devanagari'";
+  const FONT_FILES = [
+    ['Noto Serif Gurmukhi', 'noto-serif-gurmukhi', 'U+0951-0952,U+0964-0965,U+0A01-0A76,U+200C-200D,U+20B9,U+25CC,U+262C,U+A830-A839'],
+    ['Noto Serif Devanagari', 'noto-serif-devanagari', 'U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20A8,U+20B9,U+20F0,U+25CC,U+A830-A839,U+A8E0-A8FF'],
+  ];
+  const INDIC = /[\u0900-\u0A7F]/;
+  let fontsP = null, fontsOk = false;
+  function loadFonts() {
+    if (fontsP) return fontsP;
+    if (!window.FontFace || !document.fonts) { fontsOk = true; return (fontsP = Promise.resolve()); }
+    const all = [];
+    for (const [fam, file, range] of FONT_FILES) for (const w of ['400', '700']) {
+      const f = new FontFace(fam, `url(lib/fonts/${file}-${w}.woff2) format('woff2')`, { weight: w, unicodeRange: range });
+      document.fonts.add(f); all.push(f.load());
+    }
+    return (fontsP = Promise.all(all).then(() => { fontsOk = true; }, () => { fontsOk = true; }));
+  }
+  // Font family for a page: null = Times / vector PDF; otherwise the Noto fonts first (they only cover their script)
+  function familyFor(lang, cells, title) {
+    const indic = lang !== 'en' || INDIC.test(title) || cells.some(c => c.paras.some(p => INDIC.test(p.text)));
+    if (!indic) return null;
+    return (lang === 'hi' ? [DEV, GUR] : [GUR, DEV]).join(', ') + ', ' + TIMES;
+  }
+  const cssFont = (fam, size, bold) => `${bold ? 'bold ' : ''}${size}px ${fam}`;
+  let curFam = null, ctx2d = null;
+
   let measurer = null;
   function measure(text, size, bold) {
+    if (curFam) {
+      if (!ctx2d) ctx2d = document.createElement('canvas').getContext('2d');
+      ctx2d.font = cssFont(curFam, size, bold); return ctx2d.measureText(text).width;
+    }
     if (!measurer) measurer = new window.jspdf.jsPDF({ unit: 'pt', format: [612, 1008] });
     measurer.setFont('times', bold ? 'bold' : 'normal');
     return measurer.getStringUnitWidth(text) * size;
@@ -65,12 +101,14 @@
 
   // ------------------------------------------------------------ layout → drawing ops (portrait coords)
   // ops: rect {x,y,w,h} · text {x,y,text,size,bold,angle} · line {x1,y1,x2,y2,wdt}
-  function layout(form, cells) {
+  const titleOf = (form, lang) => (form.title.tr && form.title.tr[lang]) || form.title.text;
+  function layout(form, cells, lang = 'en') {
     const { colX, rowY } = geom(form);
     const ops = [];
-    const T = form.title;
-    const ttw = measure(T.text, T.size, true);
-    ops.push({ t: 'text', x: form.page.w / 2 - ttw / 2, y: T.top + T.size * 0.8, text: T.text, size: T.size, bold: true, angle: 0 });
+    const T = form.title, title = titleOf(form, lang);
+    ops.fam = curFam = familyFor(lang, cells, title); ops.lang = lang;
+    const ttw = measure(title, T.size, true);
+    ops.push({ t: 'text', x: form.page.w / 2 - ttw / 2, y: T.top + T.size * 0.8, text: title, size: T.size, bold: true, angle: 0 });
 
     for (const c of cells) {
       const x = pt(colX[c.c]), w = pt(colX[c.c + c.cs] - colX[c.c]);
@@ -101,6 +139,7 @@
         off += lh;
       }
     }
+    curFam = null;
     return ops;
   }
 
@@ -110,7 +149,7 @@
     const { A } = geom(form);
     const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
     const g = land ? `translate(${A},0) rotate(90)` : '';
-    let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(form.name)} preview"><rect width="${W}" height="${H}" fill="#fff"/><g transform="${g}" font-family="'Times New Roman', Times, 'Liberation Serif', serif" fill="#000">`;
+    let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(form.name)} preview"><rect width="${W}" height="${H}" fill="#fff"/><g transform="${g}" font-family="${esc(ops.fam || TIMES).replace(/"/g, '&quot;')}" fill="#000">`;
     for (const o of ops) {
       if (o.t === 'rect') s += `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="none" stroke="#000" stroke-width="0.5"/>`;
       else if (o.t === 'line') s += `<line x1="${o.x1}" y1="${o.y1}" x2="${o.x2}" y2="${o.y2}" stroke="#000" stroke-width="${o.wdt}"/>`;
@@ -120,9 +159,36 @@
   }
 
   // ------------------------------------------------------------ PDF
+  // The page drawn on a canvas (same ops, same transform as the preview); scale 4 ≈ 290 dpi
+  function canvasPage(form, ops, land, scale) {
+    const { A } = geom(form);
+    const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
+    const cv = document.createElement('canvas'); cv.width = Math.round(W * scale); cv.height = Math.round(H * scale);
+    const x = cv.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height);
+    x.scale(scale, scale); if (land) { x.translate(A, 0); x.rotate(Math.PI / 2); }
+    x.fillStyle = '#000'; x.strokeStyle = '#000'; x.textBaseline = 'alphabetic';
+    for (const o of ops) {
+      if (o.t === 'rect') { x.lineWidth = 0.5; x.strokeRect(o.x, o.y, o.w, o.h); }
+      else if (o.t === 'line') { x.lineWidth = o.wdt; x.beginPath(); x.moveTo(o.x1, o.y1); x.lineTo(o.x2, o.y2); x.stroke(); }
+      else {
+        x.save(); x.font = cssFont(ops.fam || TIMES, o.size, o.bold); x.translate(o.x, o.y);
+        if (o.angle) x.rotate(-o.angle * Math.PI / 180);
+        x.fillText(o.text, 0, 0); x.restore();
+      }
+    }
+    return cv;
+  }
+
   function pdf(form, ops, land) {
     const { A } = geom(form);
     const doc = new window.jspdf.jsPDF({ unit: 'pt', format: [form.page.w, form.page.h], orientation: land ? 'landscape' : 'portrait' });
+    if (ops.fam) { // Punjabi / Hindi: one high-resolution image of the page
+      const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
+      doc.addImage(canvasPage(form, ops, land, 4), 'PNG', 0, 0, W, H, undefined, 'FAST');
+      doc.setProperties({ title: form.docTitle || form.name });
+      return doc.output('blob');
+    }
     doc.setLineWidth(0.5); doc.setDrawColor(0);
     const tp = (x, y) => land ? [A - y, x] : [x, y];
     for (const o of ops) {
@@ -150,7 +216,7 @@
     portraitMargin: { top: 2000, bottom: 1000, header: 500, footer: 500 },
     landMargin: { top: 400, bottom: 300, header: 200, footer: 200 },
   };
-  function docx(form, cells, land) {
+  function docx(form, cells, land, lang = 'en') {
     const D = window.docx;
     const cfg = Object.assign({}, DOCX_DEFAULTS, form.docx || {});
     const g = form.grid;
@@ -161,10 +227,16 @@
     const NB = { top: none, bottom: none, left: none, right: none };
     const margins = { top: 40, bottom: 40, left: 70, right: 70 };
     const FONT = 'Times New Roman';
+    // Gurmukhi / Devanagari are "complex script" text in Word: Raavi / Mangal (standard Windows fonts)
+    const fontOf = text => /[\u0A00-\u0A7F]/.test(text) ? { ascii: FONT, hAnsi: FONT, cs: 'Raavi' }
+      : /[\u0900-\u097F]/.test(text) ? { ascii: FONT, hAnsi: FONT, cs: 'Mangal' } : FONT;
+    const title = titleOf(form, lang);
+    const indic = !!familyFor(lang, cells, title);
     const para = (p, o) => new D.Paragraph({
       alignment: o.align === 'left' ? D.AlignmentType.LEFT : D.AlignmentType.CENTER,
-      spacing: { before: o.before || 0, after: 0, line: 240 },
-      children: [new D.TextRun({ text: p.text, font: FONT, size: Math.round(p.size * 2), bold: p.bold, strike: p.strike })],
+      // Punjabi / Hindi fonts have tall lines in Word: fixed line height so every row keeps its printed size
+      spacing: indic ? { before: o.before || 0, after: 0, line: Math.round(p.size * 1.25 * 20), lineRule: D.LineRuleType.EXACT } : { before: o.before || 0, after: 0, line: 240 },
+      children: [new D.TextRun({ text: p.text, font: fontOf(p.text), size: Math.round(p.size * 2), bold: p.bold, strike: p.strike })],
     });
 
     // Grid for the chosen orientation
@@ -179,7 +251,7 @@
       place = c => ({ c: pRows - 1 - (c.r + c.rs - 1), r: c.c, cs: c.rs, rs: c.cs, dir: c.rot ? 'h' : 'tbrl' });
     }
     const items = cells.map(c => ({ ...place(c), cell: c }));
-    if (land) items.push({ c: pRows, r: 0, cs: 1, rs: pCols, dir: 'tbrl', cell: { paras: [P(form.title.text, form.title.size, { bold: true })], align: 'center', valign: 'center', border: false, gap: 0 } });
+    if (land) items.push({ c: pRows, r: 0, cs: 1, rs: pCols, dir: 'tbrl', cell: { paras: [P(title, form.title.size, { bold: true })], align: 'center', valign: 'center', border: false, gap: 0 } });
 
     const owner = [];
     for (let r = 0; r < nRows; r++) owner.push(Array(nCols).fill(null));
@@ -217,7 +289,7 @@
     let page, children;
     if (!land) {
       page = { size: { width: pageW, height: pageH }, margin: { ...cfg.portraitMargin, left: g.left, right: pageW - g.left - total } };
-      children = [new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: cfg.titleAfter }, children: [new D.TextRun({ text: form.title.text, font: FONT, size: form.title.size * 2, bold: true })] }), table, tail];
+      children = [new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: cfg.titleAfter }, children: [new D.TextRun({ text: title, font: fontOf(title), size: form.title.size * 2, bold: true })] }), table, tail];
     } else {
       const side = Math.floor((pageH - total) / 2);
       page = { size: { width: pageW, height: pageH, orientation: D.PageOrientation.LANDSCAPE }, margin: { ...cfg.landMargin, left: side, right: pageH - total - side } };
@@ -231,5 +303,5 @@
     return D.Packer.toBlob(doc);
   }
 
-  CF.engine = { layout, svg, pdf, docx };
+  CF.engine = { layout, svg, pdf, docx, loadFonts, fontsReady: () => fontsOk, PRINT_LANGS, canvasPage };
 })();

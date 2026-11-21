@@ -15,6 +15,8 @@
   const ICON_CHEV = '<svg class="chev" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>';
 
   let form = null, data = {}, orient = 'portrait', caseId = null, pendingCase = null;
+  let plang = 'en'; // language of the printed form: en / pa / hi
+  const PL_NAME = { en: 'English', pa: 'ਪੰਜਾਬੀ', hi: 'हिंदी' }, PL_FILE = { pa: 'Punjabi', hi: 'Hindi' };
   const storeKey = f => 'cf-form-' + f.id + '-v1';
   const land = () => orient === 'landscape';
   const S = CF.store;
@@ -22,14 +24,14 @@
   const fmtDate = ms => { const d = new Date(ms); return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
 
   function load(f) {
-    data = {}; orient = f.defaultOrient || f.orientations[0]; caseId = null;
+    data = {}; orient = f.defaultOrient || f.orientations[0]; caseId = null; plang = 'en';
     try {
       const s = JSON.parse(localStorage.getItem(storeKey(f)) || 'null');
-      if (s) { data = s.data || {}; if (f.orientations.includes(s.orient)) orient = s.orient; caseId = s.caseId || null; }
+      if (s) { data = s.data || {}; if (f.orientations.includes(s.orient)) orient = s.orient; caseId = s.caseId || null; if (E.PRINT_LANGS.includes(s.plang)) plang = s.plang; }
     } catch (e) { /* storage unavailable */ }
     if (caseId && !S.cases.get(caseId)) caseId = null; // case was deleted
   }
-  const save = () => { try { localStorage.setItem(storeKey(form), JSON.stringify({ data, orient, caseId })); } catch (e) { /* ignore */ } };
+  const save = () => { try { localStorage.setItem(storeKey(form), JSON.stringify({ data, orient, caseId, plang })); } catch (e) { /* ignore */ } };
   const keysOf = f => f.fields.filter(x => x.key).map(x => x.key);
   const hasData = () => Object.values(data).some(v => String(v || '').trim());
 
@@ -70,6 +72,8 @@
     $('#fSub').textContent = ft(f, f.desc) + ' · ' + ft(f, f.court);
     $('#orientSeg').innerHTML = f.orientations.map(o => `<button type="button" data-o="${o}">${escH(t(o))}</button>`).join('');
     $('#orientSeg').hidden = f.orientations.length < 2;
+    $('#plangSeg').setAttribute('aria-label', t('printLang')); $('#plangSeg').title = t('printLang');
+    $('#plangSeg').innerHTML = E.PRINT_LANGS.map(l => `<button type="button" data-pl="${l}" lang="${l}">${escH(PL_NAME[l])}</button>`).join('');
     const note = t('typeEnglish');
     $('#typeEn').textContent = note; $('#typeEn').hidden = !note;
     buildFields(); fillInputs(); render(); paintChip();
@@ -137,8 +141,10 @@
   const schedule = () => { clearTimeout(timer); timer = setTimeout(render, 120); };
   function render() {
     if (!form) return;
-    const ops = E.layout(form, form.build(data));
+    const ops = E.layout(form, form.build(data, plang), plang);
+    if (ops.fam && !E.fontsReady()) E.loadFonts().then(() => render()); // Punjabi / Hindi fonts: draw again once loaded
     $('#paper').innerHTML = E.svg(form, ops, land());
+    document.querySelectorAll('#plangSeg [data-pl]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pl === plang)));
     $('#formView').classList.toggle('portrait', !land());
     document.querySelectorAll('#orientSeg [data-o]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.o === orient)));
     const keys = form.fields.filter(f => f.key && !f.setting); // settings (e.g. signature on/off) are not form boxes
@@ -170,9 +176,9 @@
     toast(t('saved', { f: name }));
   }
 
-  const makePdf = () => E.pdf(form, E.layout(form, form.build(data)), land());
-  const makeDocx = () => E.docx(form, form.build(data), land());
-  const base = () => form.fileBase(data, orient);
+  const makePdf = () => E.pdf(form, E.layout(form, form.build(data, plang), plang), land());
+  const makeDocx = () => E.docx(form, form.build(data, plang), land(), plang);
+  const base = () => form.fileBase(data, orient) + (PL_FILE[plang] ? '_' + PL_FILE[plang] : '');
 
   async function busy(btn, fn, failMsg) {
     btn.disabled = true;
@@ -510,6 +516,7 @@
       e.preventDefault(); data[k] = todayStr(); save(); fillInputs(); render();
     });
     $('#orientSeg').addEventListener('click', e => { const o = e.target.dataset.o; if (!o) return; orient = o; save(); render(); });
+    $('#plangSeg').addEventListener('click', e => { const l = e.target.dataset.pl; if (!l) return; plang = l; save(); render(); if (l !== 'en') E.loadFonts(); });
     // Preview zoom (mainly for phones): bigger page, scroll with a finger; tap the page to switch too
     const setZoom = on => {
       $('#stage').classList.toggle('zoomed', on);
@@ -522,10 +529,11 @@
     setZoom(false);
     document.querySelectorAll('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => { setTab(b.dataset.tab); window.scrollTo(0, 0); }));
 
-    $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => { remember(); return saveFile(base() + '.docx', await makeDocx()); }, t('wordFail')));
-    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => { remember(); return saveFile(base() + '.pdf', makePdf()); }, t('pdfFail')));
+    $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => { remember(); await E.loadFonts(); return saveFile(base() + '.docx', await makeDocx()); }, t('wordFail')));
+    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => { remember(); await E.loadFonts(); return saveFile(base() + '.pdf', makePdf()); }, t('pdfFail')));
     $('#btnShare').hidden = !canShareFiles;
     $('#btnShare').addEventListener('click', e => busy(e.currentTarget, async () => {
+      await E.loadFonts();
       const file = new File([makePdf()], base() + '.pdf', { type: 'application/pdf' });
       await navigator.share({ files: [file], title: form.name });
     }, t('shareFail')));

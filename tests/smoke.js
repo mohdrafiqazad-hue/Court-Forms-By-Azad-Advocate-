@@ -34,6 +34,18 @@ async function fillTest(p, formId) {
   await p.waitForTimeout(150);
 }
 
+// Read one file out of a .docx (zip) without extra packages
+const zipText = (buf, name) => {
+  for (let i = 0; i < buf.length - 30; i++) {
+    if (buf.readUInt32LE(i) !== 0x04034b50) continue;
+    const method = buf.readUInt16LE(i + 8), size = buf.readUInt32LE(i + 18), nl = buf.readUInt16LE(i + 26), xl = buf.readUInt16LE(i + 28);
+    const fname = buf.slice(i + 30, i + 30 + nl).toString();
+    const start = i + 30 + nl + xl;
+    if (fname === name) { const raw = buf.slice(start, start + size); return (method === 8 ? require('zlib').inflateRawSync(raw) : raw).toString('utf8'); }
+    i = start + size - 1;
+  }
+  return '';
+};
 const pdfInfo = buf => {
   const s = buf.toString('latin1');
   const pages = (s.match(/\/Type\s*\/Page[^s]/g) || []).length;
@@ -174,6 +186,40 @@ const pdfInfo = buf => {
   await page.evaluate(() => { const c = CF.store.cases.all()[0]; CF.store.cases.remove(c.id); });
   await page.click('#btnCases');
   await page.click('[data-sheet-close]');
+  // The printed form in Punjabi / Hindi
+  console.log('Printed form in Punjabi / Hindi');
+  await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#paper svg');
+  await page.click('#btnClear'); await yes(); await fillTest(page, 'nakal');
+  check((await page.$$eval('#plangSeg [data-pl]', b => b.map(x => x.textContent).join(' '))) === 'English ਪੰਜਾਬੀ हिंदी', 'form language buttons: English, ਪੰਜਾਬੀ, हिंदी');
+  for (const [l, word, cs, name, purpose] of [['pa', 'ਕੋਰਟ ਫ਼ੀਸ', 'Raavi', 'Punjabi', 'ਰਿਕਾਰਡ'], ['hi', 'कोर्ट फ़ीस', 'Mangal', 'Hindi', 'रिकॉर्ड']]) {
+    await page.click(`#plangSeg [data-pl="${l}"]`); await page.waitForTimeout(700);
+    const pv = await paper();
+    check(pv.includes(word) && pv.includes('Asha Rani') && pv.includes(purpose) && !pv.includes('Court Fee'), `${name}: preview headings in ${name}, details as typed, purpose word translated`);
+    check(await page.evaluate(() => [...document.fonts].some(f => f.family.includes('Noto Serif') && f.status === 'loaded')), `${name}: bundled font loaded`);
+    for (const o of ['landscape', 'portrait']) {
+      await page.click(`#orientSeg [data-o="${o}"]`); await page.waitForTimeout(250);
+      const [dp] = await Promise.all([page.waitForEvent('download'), page.click('#btnPdf')]);
+      const pb = fs.readFileSync(await dp.path()); const i = pdfInfo(pb);
+      const land = o === 'landscape';
+      check(i.pages === 1 && Math.round(i.w) === (land ? 1008 : 612) && /\/Subtype\s*\/Image/.test(pb.toString('latin1')) && dp.suggestedFilename().endsWith('_' + name + '.pdf'),
+        `${name} ${o} PDF: 1 page ${i.w}×${i.h}, page drawn with the ${name} font (${dp.suggestedFilename()})`);
+      const [dw] = await Promise.all([page.waitForEvent('download'), page.click('#btnWord')]);
+      const xml = zipText(fs.readFileSync(await dw.path()), 'word/document.xml');
+      check(xml.includes(word) && xml.includes('w:cs="' + cs + '"') && dw.suggestedFilename().endsWith('_' + name + '.docx'), `${name} ${o} Word: ${name} text with the ${cs} font`);
+    }
+  }
+  await page.reload(); await page.waitForSelector('#paper svg');
+  check(await page.getAttribute('#plangSeg [data-pl="hi"]', 'aria-pressed') === 'true', 'form language is remembered');
+  await page.click('#plangSeg [data-pl="en"]'); await page.waitForTimeout(250);
+  check((await paper()).includes('Court Fee') && (await paper()).includes('FORM FOR COPIES'), 'English again: English form');
+  const [de] = await Promise.all([page.waitForEvent('download'), page.click('#btnPdf')]);
+  const eb = fs.readFileSync(await de.path());
+  check(!/\/Subtype\s*\/Image/.test(eb.toString('latin1')) && !de.suggestedFilename().includes('Punjabi'), 'English PDF stays vector text, as before');
+  await page.fill('#f_plaintiff', 'ਆਸ਼ਾ ਰਾਣੀ'); await page.waitForTimeout(250);
+  const [dg] = await Promise.all([page.waitForEvent('download'), page.click('#btnPdf')]);
+  check(/\/Subtype\s*\/Image/.test(fs.readFileSync(await dg.path()).toString('latin1')), 'English form with a name typed in Punjabi: printed correctly');
+  await page.fill('#f_plaintiff', 'Asha Rani');
+
   console.log('My details');
   await page.click('#btnMine'); await page.click('#btnSaveMine');
   check((await page.textContent('#sheetBody')).includes('Test Advocate'), 'Save these as my details shows what was saved'); await page.click('[data-sheet-close]');

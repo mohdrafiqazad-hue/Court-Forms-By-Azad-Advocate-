@@ -139,40 +139,90 @@
     },
   };
 
-  function build(d) {
+  // The printed form in Punjabi / Hindi (headings and fixed words only; what the user fills is printed as typed,
+  // except the Purpose words picked from the list). The layout and boxes stay the same.
+  const PRINT = {
+    pa: {
+      'FORM FOR COPIES': 'ਨਕਲ ਲੈਣ ਲਈ ਫ਼ਾਰਮ',
+      'Ordinary': 'ਸਾਧਾਰਨ', 'Urgent': 'ਜ਼ਰੂਰੀ', 'Court Fee': 'ਕੋਰਟ ਫ਼ੀਸ', 'In Person': 'ਖ਼ੁਦ ਆ ਕੇ', 'By Registered Post': 'ਰਜਿਸਟਰਡ ਡਾਕ ਰਾਹੀਂ',
+      'Sir, the applicant requests that copy be supplied as per the particulars given in the table below, in accordance with the Rules.':
+        'ਸ੍ਰੀਮਾਨ ਜੀ, ਬਿਨੈਕਾਰ ਬੇਨਤੀ ਕਰਦਾ ਹੈ ਕਿ ਹੇਠਾਂ ਦਿੱਤੀ ਸਾਰਣੀ ਦੇ ਵੇਰਵਿਆਂ ਅਨੁਸਾਰ, ਨਿਯਮਾਂ ਮੁਤਾਬਕ ਨਕਲ ਦਿੱਤੀ ਜਾਵੇ।',
+      'No.: 9': 'ਨੰ.: 9', 'be supplied.': 'ਦਿੱਤੀ ਜਾਵੇ।', 'Date:': 'ਮਿਤੀ:', 'Case No.': 'ਕੇਸ ਨੰ.',
+      'Nature of Case: Civil, Revenue, Criminal, Miscellaneous or Appeal': 'ਕੇਸ ਦੀ ਕਿਸਮ: ਦੀਵਾਨੀ, ਮਾਲ, ਫ਼ੌਜਦਾਰੀ, ਫੁਟਕਲ ਜਾਂ ਅਪੀਲ',
+      'Parties': 'ਧਿਰਾਂ', 'Plaintiff or Complainant': 'ਮੁੱਦਈ ਜਾਂ ਸ਼ਿਕਾਇਤਕਰਤਾ', 'Defendant or Accused / Respondent': 'ਮੁਦਾਲਾ ਜਾਂ ਦੋਸ਼ੀ / ਜਵਾਬਦੇਹ',
+      'Nature of Claim / Value of Suit or Details of Offence': 'ਦਾਅਵੇ ਦੀ ਕਿਸਮ / ਦਾਅਵੇ ਦੀ ਮਾਲੀਅਤ ਜਾਂ ਜੁਰਮ ਦਾ ਵੇਰਵਾ',
+      'Name of Village / City where Property is Situated or Cause Arose or Offence was Committed': 'ਪਿੰਡ / ਸ਼ਹਿਰ ਦਾ ਨਾਂ ਜਿੱਥੇ ਜਾਇਦਾਦ ਸਥਿਤ ਹੈ ਜਾਂ ਕਾਰਨ ਪੈਦਾ ਹੋਇਆ ਜਾਂ ਜੁਰਮ ਹੋਇਆ',
+      'Name of Presiding Officer & Court: Original or Appeal': 'ਪ੍ਰੀਜ਼ਾਈਡਿੰਗ ਅਫ਼ਸਰ ਅਤੇ ਅਦਾਲਤ ਦਾ ਨਾਂ: ਅਸਲ ਜਾਂ ਅਪੀਲ',
+      'Date of Decision: Original or Appeal': 'ਫ਼ੈਸਲੇ ਦੀ ਮਿਤੀ: ਅਸਲ ਜਾਂ ਅਪੀਲ',
+      'Purpose for which Copy is Required': 'ਨਕਲ ਕਿਸ ਮਕਸਦ ਲਈ ਚਾਹੀਦੀ ਹੈ', 'Details of Copies Required': 'ਲੋੜੀਂਦੀਆਂ ਨਕਲਾਂ ਦਾ ਵੇਰਵਾ',
+      'Seal or Thumb Impression or Signature of Applicant': 'ਬਿਨੈਕਾਰ ਦੀ ਮੋਹਰ, ਅੰਗੂਠਾ ਜਾਂ ਦਸਤਖ਼ਤ',
+      "Applicant's Complete Address": 'ਬਿਨੈਕਾਰ ਦਾ ਪੂਰਾ ਪਤਾ',
+      "Applicant's": 'ਬਿਨੈਕਾਰ ਦਾ', "Father's": 'ਪਿਤਾ ਦਾ', 'Name': 'ਨਾਂ', 'Work': 'ਕੰਮ', 'Profession': 'ਪੇਸ਼ਾ', 'Post': 'ਡਾਕ', 'Office': 'ਘਰ',
+      'Police': 'ਪੁਲਿਸ', 'Station': 'ਥਾਣਾ', 'Tehsil': 'ਤਹਿਸੀਲ', 'District': 'ਜ਼ਿਲ੍ਹਾ', 'Signature of': 'ਲਿਖਾਰੀ ਦੇ', 'Scribe': 'ਦਸਤਖ਼ਤ',
+      // Purpose words picked from the list
+      'Record': 'ਰਿਕਾਰਡ', 'Personal Record': 'ਨਿੱਜੀ ਰਿਕਾਰਡ', 'Appeal': 'ਅਪੀਲ', 'Revision': 'ਰਿਵੀਜ਼ਨ', 'High Court': 'ਹਾਈ ਕੋਰਟ',
+      'Bail': 'ਜ਼ਮਾਨਤ', 'Execution': 'ਇਜਰਾ', 'Evidence': 'ਸਬੂਤ', 'Reference': 'ਹਵਾਲਾ', 'Office Use': 'ਦਫ਼ਤਰੀ ਵਰਤੋਂ',
+    },
+    hi: {
+      'FORM FOR COPIES': 'नकल प्राप्ति हेतु फ़ॉर्म',
+      'Ordinary': 'साधारण', 'Urgent': 'तत्काल', 'Court Fee': 'कोर्ट फ़ीस', 'In Person': 'स्वयं आकर', 'By Registered Post': 'रजिस्टर्ड डाक द्वारा',
+      'Sir, the applicant requests that copy be supplied as per the particulars given in the table below, in accordance with the Rules.':
+        'श्रीमान जी, आवेदक निवेदन करता है कि नीचे दी गई तालिका के विवरण के अनुसार, नियमों के मुताबिक नकल दी जाए।',
+      'No.: 9': 'नं.: 9', 'be supplied.': 'दी जाए।', 'Date:': 'दिनांक:', 'Case No.': 'केस नं.',
+      'Nature of Case: Civil, Revenue, Criminal, Miscellaneous or Appeal': 'मुकदमे की किस्म: दीवानी, माल, फ़ौजदारी, विविध या अपील',
+      'Parties': 'पक्षकार', 'Plaintiff or Complainant': 'वादी या शिकायतकर्ता', 'Defendant or Accused / Respondent': 'प्रतिवादी या अभियुक्त / उत्तरदाता',
+      'Nature of Claim / Value of Suit or Details of Offence': 'दावे की किस्म / दावे की मालियत या अपराध का विवरण',
+      'Name of Village / City where Property is Situated or Cause Arose or Offence was Committed': 'गाँव / शहर का नाम जहाँ संपत्ति स्थित है या वाद-कारण उत्पन्न हुआ या अपराध हुआ',
+      'Name of Presiding Officer & Court: Original or Appeal': 'पीठासीन अधिकारी व न्यायालय का नाम: मूल या अपील',
+      'Date of Decision: Original or Appeal': 'निर्णय की तिथि: मूल या अपील',
+      'Purpose for which Copy is Required': 'नकल किस प्रयोजन हेतु चाहिए', 'Details of Copies Required': 'वांछित नकलों का विवरण',
+      'Seal or Thumb Impression or Signature of Applicant': 'आवेदक की मोहर, अंगूठा निशान या हस्ताक्षर',
+      "Applicant's Complete Address": 'आवेदक का पूरा पता',
+      "Applicant's": 'आवेदक का', "Father's": 'पिता का', 'Name': 'नाम', 'Work': 'काम', 'Profession': 'पेशा', 'Post': 'डाक', 'Office': 'घर',
+      'Police': 'पुलिस', 'Station': 'थाना', 'Tehsil': 'तहसील', 'District': 'ज़िला', 'Signature of': 'लेखक के', 'Scribe': 'हस्ताक्षर',
+      'Record': 'रिकॉर्ड', 'Personal Record': 'निजी रिकॉर्ड', 'Appeal': 'अपील', 'Revision': 'निगरानी (रिवीज़न)', 'High Court': 'हाई कोर्ट',
+      'Bail': 'ज़मानत', 'Execution': 'इजराय', 'Evidence': 'साक्ष्य', 'Reference': 'हवाला', 'Office Use': 'कार्यालय उपयोग',
+    },
+  };
+
+  // lang: language of the printed form ('en' | 'pa' | 'hi')
+  function build(d, lang = 'en') {
     const { cells, add } = cellList();
-    const dat = k => linesOf(k === 'nature' ? natureText(d) : d[k]).map(t => P(t, DATA));
+    const L = s => (PRINT[lang] && PRINT[lang][s]) || s;
+    const PURPOSES = FIELDS.find(f => f.key === 'purpose').options.map(o => o[0]).filter(Boolean);
+    const val = k => k === 'nature' ? natureText(d, L) : k === 'purpose' && PURPOSES.includes(d.purpose) ? L(d.purpose) : d[k];
+    const dat = k => linesOf(val(k)).map(t => P(t, DATA));
 
     // r0 — top boxes
-    add(0, 0, 4, 1, [P('Ordinary', BIG, { bold: true, strike: d.copyType === 'urgent' }), P('Urgent', BIG, { bold: true, strike: d.copyType === 'ordinary' })]);
-    add(4, 0, 3, 1, [P(d.courtFee || '', BIG, { bold: !d.courtFee }), P('Court Fee', BIG, { bold: true })]);
-    add(7, 0, 3, 1, [P('In Person', BIG, { bold: true, strike: d.delivery === 'registry' }), P('By Registered Post', BIG, { bold: true, strike: d.delivery === 'person' })]);
+    add(0, 0, 4, 1, [P(L('Ordinary'), BIG, { bold: true, strike: d.copyType === 'urgent' }), P(L('Urgent'), BIG, { bold: true, strike: d.copyType === 'ordinary' })]);
+    add(4, 0, 3, 1, [P(d.courtFee || '', BIG, { bold: !d.courtFee }), P(L('Court Fee'), BIG, { bold: true })]);
+    add(7, 0, 3, 1, [P(L('In Person'), BIG, { bold: true, strike: d.delivery === 'registry' }), P(L('By Registered Post'), BIG, { bold: true, strike: d.delivery === 'person' })]);
     // r1 — request line
     const no = '......................................'; // left blank on the printed form, filled by hand
     const dt = (d.reqDate || '').trim() ? clean(d.reqDate).trim() : '....................';
     add(0, 1, 10, 1, [
-      P('Sir, the applicant requests that copy be supplied as per the particulars given in the table below, in accordance with the Rules.', DATA),
-      P('No.: 9  ' + no + '  be supplied.                    Date: ' + dt, DATA),
+      P(L('Sir, the applicant requests that copy be supplied as per the particulars given in the table below, in accordance with the Rules.'), DATA),
+      P(L('No.: 9') + '  ' + no + '  ' + L('be supplied.') + '                    ' + L('Date:') + ' ' + dt, DATA),
     ], { gap: 2 });
     // r2-r3 — headings
-    add(0, 2, 1, 2, [P('Nature of Case: Civil, Revenue, Criminal, Miscellaneous or Appeal', HEAD)], { rot: true });
-    add(1, 2, 2, 1, [P('Parties', DATA)], { align: 'left', valign: 'top' });
-    add(1, 3, 1, 1, [P('Plaintiff or Complainant', HEAD)], { rot: true, align: 'left', valign: 'top' });
-    add(2, 3, 1, 1, [P('Defendant or Accused / Respondent', HEAD)], { rot: true, align: 'left', valign: 'top' });
+    add(0, 2, 1, 2, [P(L('Nature of Case: Civil, Revenue, Criminal, Miscellaneous or Appeal'), HEAD)], { rot: true });
+    add(1, 2, 2, 1, [P(L('Parties'), DATA)], { align: 'left', valign: 'top' });
+    add(1, 3, 1, 1, [P(L('Plaintiff or Complainant'), HEAD)], { rot: true, align: 'left', valign: 'top' });
+    add(2, 3, 1, 1, [P(L('Defendant or Accused / Respondent'), HEAD)], { rot: true, align: 'left', valign: 'top' });
     ['Nature of Claim / Value of Suit or Details of Offence',
       'Name of Village / City where Property is Situated or Cause Arose or Offence was Committed',
       'Name of Presiding Officer & Court: Original or Appeal', 'Date of Decision: Original or Appeal',
       'Purpose for which Copy is Required', 'Details of Copies Required', 'Seal or Thumb Impression or Signature of Applicant',
-    ].forEach((h, i) => add(3 + i, 2, 1, 2, [P(h, HEAD)], { rot: true }));
+    ].forEach((h, i) => add(3 + i, 2, 1, 2, [P(L(h), HEAD)], { rot: true }));
     // r4 — particulars (rotated, like the headings)
     ['nature', 'plaintiff', 'defendant', 'claim', 'village', 'court', 'decision', 'purpose', 'copies', 'seal']
       .forEach((k, i) => add(i, 4, 1, 1, dat(k), { rot: true }));
     // r5 — address title
-    add(0, 5, 10, 1, [P("Applicant's Complete Address", BIG, { bold: true })]);
+    add(0, 5, 10, 1, [P(L("Applicant's Complete Address"), BIG, { bold: true })]);
     // r6 — address headings; r7 — address particulars (rotated)
     const ah = [["Applicant's", 'Name'], ["Father's", 'Name'], ['Work'], ['Profession'], ['Post', 'Office'], ['Police', 'Station'], ['Tehsil'], ['District'], ['Signature of', 'Scribe']];
     const acol = [0, 1, 2, 3, 5, 6, 7, 8, 9];
-    ah.forEach((t, i) => add(acol[i], 6, acol[i] === 3 ? 2 : 1, 1, t.map(x => P(x, HEAD)), { valign: 'top' }));
+    ah.forEach((t, i) => add(acol[i], 6, acol[i] === 3 ? 2 : 1, 1, t.map(x => P(L(x), HEAD)), { valign: 'top' }));
     ['aName', 'aFather', 'aWork', 'aProfession', 'aPO', 'aPS', 'aTehsil', 'aDistrict', 'aScribe']
       .forEach((k, i) => add(acol[i], 7, acol[i] === 3 ? 2 : 1, 1, dat(k), { rot: true }));
     return cells;
@@ -181,9 +231,9 @@
   // Case number: type code + number (COMA/55/2024); older free-text natures keep the number they contain
   const caseNumber = d => CT.number(d.nature, d.caseNo) || (clean(d.nature).match(/[A-Z]{2,}[\/\-][\w\/\-]+/) || [''])[0];
   // Nature of Case box: the chosen type, then "Case No. …" when a number is given
-  function natureText(d) {
+  function natureText(d, L = s => s) {
     const no = CT.number(d.nature, d.caseNo);
-    return [clean(d.nature).trim(), no && 'Case No. ' + no].filter(Boolean).join('\n');
+    return [clean(d.nature).trim(), no && L('Case No.') + ' ' + no].filter(Boolean).join('\n');
   }
 
   // Name shown in "My cases": parties and case number
@@ -214,7 +264,7 @@
     court: 'District Courts, Jalandhar',
     docTitle: 'Form for Copies',
     page: { w: 612, h: 1008 },                       // Legal, 8.5" × 14" (points)
-    title: { text: 'FORM FOR COPIES', size: 22, top: 100 },
+    title: { text: 'FORM FOR COPIES', size: 22, top: 100, tr: { pa: PRINT.pa['FORM FOR COPIES'], hi: PRINT.hi['FORM FOR COPIES'] } },
     grid: { left: 420, top: 2820, cols: Array(10).fill(1140), rows: [886, 763, 634, 3700, 5587, 482, 814, 2563] },
     orientations: ['landscape', 'portrait'],
     defaultOrient: 'landscape',
