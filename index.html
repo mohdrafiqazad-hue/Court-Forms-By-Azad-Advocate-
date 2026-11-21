@@ -16,43 +16,44 @@
 <!-- Sign-in & membership gate -->
 <section id="gate" class="gate">
   <div class="gate-box">
-    <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64"><span>i Court Forms</span><small>Court forms in the exact printed format</small></div>
+    <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64"><span>i Court Forms</span><small data-i18n="tagline">Court forms in the exact printed format</small></div>
+    <div class="langpick" role="group" data-i18n-aria="language" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="hi">हिंदी</button><button type="button" data-lang="pa">ਪੰਜਾਬੀ</button></div>
 
-    <div id="gLoading" class="gscreen"><p class="muted center">Loading…</p></div>
+    <div id="gLoading" class="gscreen"><p class="muted center" data-i18n="loading">Loading…</p></div>
 
     <div id="gSetup" class="gscreen" hidden>
-      <h2>Setup pending</h2>
-      <p class="muted">Firebase is not configured yet. Fill <code>js/config.js</code> as described in <code>SETUP.md</code>.</p>
+      <h2 data-i18n="setupTitle">Setup pending</h2>
+      <p class="muted" data-i18n="setupText">Firebase is not configured yet (see SETUP.md).</p>
     </div>
 
     <div id="gLogin" class="gscreen" hidden>
       <ul class="ticks">
-        <li>Fill the blanks, see a live preview</li>
-        <li>Export Word &amp; PDF, ready to print</li>
-        <li>Works offline once installed</li>
+        <li data-i18n="tick1">Fill the blanks, see a live preview</li>
+        <li data-i18n="tick2">Export Word &amp; PDF, ready to print</li>
+        <li data-i18n="tick3">Works offline once installed</li>
       </ul>
-      <p class="small muted">Sign in, and the owner approves your access.</p>
+      <p class="small muted" data-i18n="signinNote">Sign in, and the owner approves your access.</p>
       <button type="button" class="btn google" id="btnGoogle">
         <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
-        Continue with Google
+        <span data-i18n="google">Continue with Google</span>
       </button>
       <p id="loginMsg" class="err" role="alert"></p>
-      <p class="small muted">By continuing you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
+      <p class="small muted" data-i18n-html="agree">By continuing you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
     </div>
 
     <div id="gWait" class="gscreen" hidden>
       <div class="hourglass" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9"/></svg></div>
       <h2 id="waitHello">Hello!</h2>
-      <p class="small muted">Signed in as <span id="waitWho"></span> · <button type="button" class="linkbtn" data-signout>Sign out</button></p>
+      <p class="small muted"><span data-i18n="signedInAs">Signed in as</span> <span id="waitWho"></span> · <button type="button" class="linkbtn" data-signout data-i18n="signOut">Sign out</button></p>
       <div class="price"><strong id="waitTitle">Waiting for approval</strong></div>
       <p id="waitText"></p>
-      <a class="btn" id="waitWa" href="#" target="_blank" rel="noopener" hidden>Message the owner on WhatsApp</a>
+      <a class="btn" id="waitWa" href="#" target="_blank" rel="noopener" hidden data-i18n="waBtn">Message the owner on WhatsApp</a>
     </div>
 
     <div id="gOffline" class="gscreen" hidden>
-      <h2>No internet</h2>
-      <p class="muted">Connect to the internet once to sign in. After that the app works offline.</p>
-      <button type="button" class="btn" id="btnRetry">Try again</button>
+      <h2 data-i18n="offTitle">No internet</h2>
+      <p class="muted" data-i18n="offText">Connect to the internet once to sign in. After that the app works offline.</p>
+      <button type="button" class="btn" id="btnRetry" data-i18n="retry">Try again</button>
     </div>
   </div>
 </section>
@@ -62,26 +63,27 @@
   <header class="appbar">
     <div class="appbar-in">
       <div class="brand-sm"><img src="icons/icon-192.png" alt="" width="30" height="30"><span>i Court Forms</span></div>
+      <select class="langsel" data-i18n-aria="language" aria-label="Language"><option value="en">English</option><option value="hi">हिंदी</option><option value="pa">ਪੰਜਾਬੀ</option></select>
       <div id="acct" class="acct" hidden></div>
     </div>
     <div class="hero">
       <p class="hello" id="hello">Welcome</p>
-      <h1>Court forms, ready to print</h1>
-      <p>Fill the blanks · live preview · Word &amp; PDF in the exact court format</p>
+      <h1 data-i18n="heroTitle">Court forms, ready to print</h1>
+      <p data-i18n="heroText">Fill the blanks · live preview · Word &amp; PDF in the exact court format</p>
     </div>
   </header>
   <main class="wrap">
     <a id="teamCard" class="teamcard" href="#/team" hidden>
       <span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.3 3.3 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.4 3.5 5.2"/></svg></span>
-      <span class="tc-body"><strong>Team</strong><span>Approve who can use the app</span></span>
+      <span class="tc-body"><strong data-i18n="team">Team</strong><span data-i18n="teamCardSub">Approve who can use the app</span></span>
       <span class="badge big" data-team-count hidden>0</span>
       <svg class="chev" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
     </a>
-    <h2 class="list-h">Forms</h2>
+    <h2 class="list-h" data-i18n="forms">Forms</h2>
     <div id="formList" class="cards"></div>
-    <h2 class="list-h">Coming soon</h2>
+    <h2 class="list-h" data-i18n="soonH">Coming soon</h2>
     <ul id="planned" class="planned"></ul>
-    <p class="foot">Always check the exported form before filing. · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a></p>
+    <p class="foot" data-i18n-html="foot">Always check the exported form before filing. · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a></p>
   </main>
 </section>
 
@@ -89,19 +91,20 @@
 <section id="teamView" class="screen" hidden>
   <header class="appbar">
     <div class="appbar-in">
-      <a href="#/" class="back light" aria-label="All forms">&#8592;</a>
+      <a href="#/" class="back light" aria-label="All forms" data-i18n-aria="allForms">&#8592;</a>
       <div class="brand-sm"><span>i Court Forms</span></div>
+      <select class="langsel" data-i18n-aria="language" aria-label="Language"><option value="en">English</option><option value="hi">हिंदी</option><option value="pa">ਪੰਜਾਬੀ</option></select>
     </div>
     <div class="hero">
-      <h1>Team</h1>
-      <p>Approve who can use i Court Forms</p>
+      <h1 data-i18n="team">Team</h1>
+      <p data-i18n="teamSub">Approve who can use i Court Forms</p>
     </div>
   </header>
   <main class="wrap">
     <nav class="atabs" id="teamTabs">
-      <button type="button" data-t="requests">Requests <span id="reqCount" class="badge">0</span></button>
-      <button type="button" data-t="approved">Approved <span id="appCount" class="badge muted-badge">0</span></button>
-      <button type="button" data-t="removed">Removed</button>
+      <button type="button" data-t="requests"><span data-i18n="requests">Requests</span> <span id="reqCount" class="badge">0</span></button>
+      <button type="button" data-t="approved"><span data-i18n="approvedTab">Approved</span> <span id="appCount" class="badge muted-badge">0</span></button>
+      <button type="button" data-t="removed"><span data-i18n="removedTab">Removed</span></button>
     </nav>
     <p id="teamHint" class="small muted"></p>
     <div id="teamList"></div>
@@ -111,25 +114,26 @@
 <!-- Form screen -->
 <section id="formView" class="fv" data-tab="fill" hidden>
   <header class="fv-head">
-    <a href="#/" class="back" aria-label="All forms">&#8592;</a>
+    <a href="#/" class="back" aria-label="All forms" data-i18n-aria="allForms">&#8592;</a>
     <div class="fv-title"><strong id="fTitle"></strong><small id="fSub"></small></div>
     <div class="actions">
       <button type="button" class="btn primary" id="btnWord">Word</button>
       <button type="button" class="btn primary" id="btnPdf">PDF</button>
-      <button type="button" class="btn" id="btnShare" hidden>Share PDF</button>
+      <button type="button" class="btn" id="btnShare" hidden data-i18n="sharePdf">Share PDF</button>
     </div>
   </header>
   <nav class="tabs" aria-label="Screen">
-    <button type="button" data-tab="fill">Fill</button>
-    <button type="button" data-tab="preview">Preview</button>
+    <button type="button" data-tab="fill" data-i18n="fill">Fill</button>
+    <button type="button" data-tab="preview" data-i18n="preview">Preview</button>
   </nav>
   <div class="work">
     <aside class="pane-fill">
       <div class="mini">
-        <button type="button" class="btn sm" id="btnSample">Sample case</button>
-        <button type="button" class="btn sm" id="btnClear">New form</button>
+        <button type="button" class="btn sm" id="btnSample" data-i18n="sample">Sample case</button>
+        <button type="button" class="btn sm" id="btnClear" data-i18n="newForm">New form</button>
         <span id="count"></span>
       </div>
+      <p id="typeEn" class="note small" hidden></p>
       <div id="fields"></div>
     </aside>
     <main class="pane-preview">
@@ -142,7 +146,7 @@
 </section>
 
 <div id="toast" role="status" aria-live="polite"></div>
-<div id="confirm" hidden><div class="box" role="dialog" aria-modal="true"><p></p><div class="row"><button class="btn" data-no>Cancel</button><button class="btn primary" data-yes>Yes</button></div></div></div>
+<div id="confirm" hidden><div class="box" role="dialog" aria-modal="true"><p></p><div class="row"><button class="btn" data-no data-i18n="cancel">Cancel</button><button class="btn primary" data-yes data-i18n="yes">Yes</button></div></div></div>
 
 <script src="lib/jspdf.umd.min.js"></script>
 <script src="lib/docx.min.js"></script>
@@ -150,6 +154,7 @@
 <script src="lib/firebase-auth-compat.js"></script>
 <script src="lib/firebase-firestore-compat.js"></script>
 <script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/engine.js"></script>
 <script src="forms/nakal.js"></script>
 <script src="js/team.js"></script>

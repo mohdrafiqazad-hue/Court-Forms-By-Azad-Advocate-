@@ -4,6 +4,8 @@
   const CF = window.CF, E = CF.engine;
   const $ = s => document.querySelector(s);
   const escH = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const t = (k, v) => CF.i18n.t(k, v);
+  const ft = (f, s) => CF.i18n.ft(f, s); // a form's own words in the chosen language
 
   // Forms the owner plans to add (names only — formats come from the printed forms).
   const PLANNED = ['Vakalatnama', 'Memo of Appearance', 'Exemption Application', 'Adjournment Application', 'Personal Bond', 'Surety Bond'];
@@ -30,9 +32,9 @@
     $('#formView').hidden = true; $('#home').hidden = false;
     document.title = 'i Court Forms';
     $('#formList').innerHTML = CF.forms.map(f =>
-      `<a class="card" href="#/f/${f.id}"><span class="ic">${ICON_DOC}</span><span class="card-body"><strong>${escH(f.name)}</strong><span>${escH(f.desc)}</span><em>${escH(f.court)}</em></span>${ICON_CHEV}</a>`).join('');
+      `<a class="card" href="#/f/${f.id}"><span class="ic">${ICON_DOC}</span><span class="card-body"><strong>${escH(ft(f, f.name))}</strong><span>${escH(ft(f, f.desc))}</span><em>${escH(ft(f, f.court))}</em></span>${ICON_CHEV}</a>`).join('');
     const have = new Set(CF.forms.map(f => f.name.toLowerCase()));
-    $('#planned').innerHTML = PLANNED.filter(n => !have.has(n.toLowerCase())).map(n => `<li>${ICON_DOC}<span>${escH(n)}</span><em>Soon</em></li>`).join('');
+    $('#planned').innerHTML = PLANNED.filter(n => !have.has(n.toLowerCase())).map(n => `<li>${ICON_DOC}<span>${escH(t(n))}</span><em>${escH(t('soon'))}</em></li>`).join('');
     window.scrollTo(0, 0);
   }
 
@@ -40,26 +42,37 @@
   function openForm(f) {
     form = f; load(f);
     $('#home').hidden = true; $('#formView').hidden = false;
-    document.title = f.name + ' — i Court Forms';
-    $('#fTitle').textContent = f.name;
-    $('#fSub').textContent = f.desc + ' · ' + f.court;
-    $('#orientSeg').innerHTML = f.orientations.map(o => `<button type="button" data-o="${o}">${o[0].toUpperCase() + o.slice(1)}</button>`).join('');
-    $('#orientSeg').hidden = f.orientations.length < 2;
-    buildFields(); fillInputs(); setTab('fill'); render();
+    setTab('fill'); paintForm();
     window.scrollTo(0, 0);
+  }
+
+  // Titles, orientation buttons and fields in the chosen language (values are kept)
+  function paintForm() {
+    const f = form;
+    document.title = ft(f, f.name) + ' — i Court Forms';
+    $('#fTitle').textContent = ft(f, f.name);
+    $('#fSub').textContent = ft(f, f.desc) + ' · ' + ft(f, f.court);
+    $('#orientSeg').innerHTML = f.orientations.map(o => `<button type="button" data-o="${o}">${escH(t(o))}</button>`).join('');
+    $('#orientSeg').hidden = f.orientations.length < 2;
+    const note = t('typeEnglish');
+    $('#typeEn').textContent = note; $('#typeEn').hidden = !note;
+    buildFields(); fillInputs(); render();
   }
 
   function buildFields() {
     let html = '';
+    const en = CF.i18n.lang === 'en';
     for (const f of form.fields) {
-      if (f.group) { html += `<h3>${escH(f.group)}</h3>`; continue; }
+      if (f.group) { html += `<h3>${escH(ft(form, f.group))}</h3>`; continue; }
       const id = 'f_' + f.key;
-      const today = f.today ? `<button type="button" class="linkbtn" data-today="${f.key}">Today</button>` : '';
-      html += `<label class="fld" for="${id}"><span>${escH(f.label)}${today}</span>`;
-      if (f.type === 'choice') html += `<select id="${id}" data-k="${f.key}">${f.options.map(o => `<option value="${escH(o[0])}">${escH(o[1])}</option>`).join('')}</select>`;
+      const today = f.today ? `<button type="button" class="linkbtn" data-today="${f.key}">${escH(t('today'))}</button>` : '';
+      const label = ft(form, f.label);
+      const orig = !en && label !== f.label ? `<small class="en-label">${escH(f.label)}</small>` : '';
+      html += `<label class="fld" for="${id}"><span>${escH(label)}${today}</span>${orig}`;
+      if (f.type === 'choice') html += `<select id="${id}" data-k="${f.key}">${f.options.map(o => `<option value="${escH(o[0])}">${escH(ft(form, o[1]))}</option>`).join('')}</select>`;
       else if (f.type === 'area') html += `<textarea id="${id}" data-k="${f.key}" rows="${f.rows || 2}" autocapitalize="sentences"></textarea>`;
       else html += `<input id="${id}" data-k="${f.key}" type="text" placeholder="${escH(f.placeholder || '')}" autocapitalize="words">`;
-      if (f.hint) html += `<small>${escH(f.hint)}</small>`;
+      if (f.hint) html += `<small>${escH(ft(form, f.hint))}</small>`;
       html += `</label>`;
     }
     $('#fields').innerHTML = html;
@@ -77,7 +90,7 @@
     $('#formView').classList.toggle('portrait', !land());
     document.querySelectorAll('#orientSeg [data-o]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.o === orient)));
     const keys = form.fields.filter(f => f.key);
-    $('#count').textContent = keys.filter(f => String(data[f.key] || '').trim()).length + ' of ' + keys.length + ' filled';
+    $('#count').textContent = t('filled', { n: keys.filter(f => String(data[f.key] || '').trim()).length, t: keys.length });
   }
 
   function setTab(t) {
@@ -94,15 +107,15 @@
   async function saveFile(name, blob) {
     await dlReady;
     if (dlCap) {
-      try { await dlCap.save({ filename: name, data: blob }); toast('Saved: ' + name); }
-      catch (e) { toast(e && e.code === 'declined' ? 'Download cancelled' : 'Could not save the file here'); }
+      try { await dlCap.save({ filename: name, data: blob }); toast(t('saved', { f: name })); }
+      catch (e) { toast(t(e && e.code === 'declined' ? 'dlCancel' : 'dlFail')); }
       return;
     }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast('Saved: ' + name);
+    toast(t('saved', { f: name }));
   }
 
   const makePdf = () => E.pdf(form, E.layout(form, form.build(data)), land());
@@ -147,24 +160,27 @@
     $('#orientSeg').addEventListener('click', e => { const o = e.target.dataset.o; if (!o) return; orient = o; save(); render(); });
     document.querySelectorAll('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => { setTab(b.dataset.tab); window.scrollTo(0, 0); }));
 
-    $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => saveFile(base() + '.docx', await makeDocx()), 'Word export failed'));
-    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => saveFile(base() + '.pdf', makePdf()), 'PDF export failed'));
+    $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => saveFile(base() + '.docx', await makeDocx()), t('wordFail')));
+    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => saveFile(base() + '.pdf', makePdf()), t('pdfFail')));
     $('#btnShare').hidden = !canShareFiles;
     $('#btnShare').addEventListener('click', e => busy(e.currentTarget, async () => {
       const file = new File([makePdf()], base() + '.pdf', { type: 'application/pdf' });
       await navigator.share({ files: [file], title: form.name });
-    }, 'Could not share the PDF'));
+    }, t('shareFail')));
 
     $('#btnSample').addEventListener('click', async () => {
-      if (Object.values(data).some(v => String(v || '').trim()) && !(await confirmBox('Replace what you have typed with the sample case (' + form.sampleLabel + ')?'))) return;
+      if (Object.values(data).some(v => String(v || '').trim()) && !(await confirmBox(t('confirmSample', { label: form.sampleLabel })))) return;
       data = { ...form.sample }; save(); fillInputs(); render();
     });
     $('#btnClear').addEventListener('click', async () => {
-      if (!(await confirmBox('Clear every field and start a new form?'))) return;
+      if (!(await confirmBox(t('confirmClear')))) return;
       data = {}; save(); fillInputs(); render();
     });
 
     window.addEventListener('hashchange', route);
+    CF.i18n.onChange(() => { // language switched: redraw what is on screen
+      if (form) paintForm(); else if (!$('#home').hidden) showHome();
+    });
     route();
   }
 

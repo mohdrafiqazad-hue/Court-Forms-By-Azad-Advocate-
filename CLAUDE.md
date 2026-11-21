@@ -13,6 +13,7 @@ Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Fir
 - `css/app.css` — styles. Mobile-first: under 820px the form screen has Fill / Preview tabs and a fixed bottom bar with the export buttons.
 - `js/config.js` — owner settings: Firebase web config, support WhatsApp. Not secret.
 - `js/gate.js` — sign-in + approval gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Writes `users/{uid}` at sign-in (that is the request), listens live to `members/{uid}`. Caches an approval in localStorage (`icf-member-v1`, at most 30 days) so the app opens offline. Admins (detected by listing `users`, which the rules only allow for admins) always get in.
+- `js/i18n.js` — interface language English / हिंदी / ਪੰਜਾਬੀ (`CF.t(key, vars)`, `CF.i18n.ft(form, text)`, `data-i18n*` attributes, choice saved in localStorage `icf-lang`, pickers on the sign-in screen and in the app bar). Every new UI text needs all three languages in its dictionary; every form needs `tr.hi` / `tr.pa` for its name, desc, court, groups, labels, hints and option texts (`tests/smoke.js` checks both). The printed Word/PDF form always stays in English.
 - `js/engine.js` — rendering engine shared by all forms (`CF.engine`: `layout`, `svg`, `pdf`, `docx`) and helpers (`CF.util`: `P`, `linesOf`, `clean`, `cellList`).
 - `js/app.js` — app shell: hash routing (`#/` home, `#/f/<id>` a form), field rendering, autosave, export, Web Share.
 - `forms/<id>.js` — one file per form. Each calls `CF.register({...})`.
@@ -36,6 +37,7 @@ A form config (`forms/nakal.js` is the reference) has:
 - `orientations` — e.g. `['landscape', 'portrait']`; `defaultOrient`
 - `fields` — inputs: `{ group }` headings, or `{ key, label, type: 'text'|'area'|'choice', rows, options, hint, placeholder, today }`
 - `sample` — demo data for the "Sample case" button
+- `tr` — `{ hi: { 'English text': 'हिंदी' }, pa: { … } }` for the app screen (name, desc, court, groups, labels, hints, option texts)
 - `build(data)` — returns the cells: `CF.util.cellList()` → `add(col, row, colSpan, rowSpan, paragraphs, { rot, align, valign, border, gap })`; paragraphs are `P(text, size, { bold, strike })`. `rot: true` = vertical text, bottom-to-top.
 - `fileBase(data, orient)` — file name without extension
 - optional `docx` — overrides for Word page margins (`titleAfter`, `titleCol`, `portraitMargin`, `landMargin`)

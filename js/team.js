@@ -11,6 +11,7 @@
   const fmtDate = ms => { const d = new Date(ms); return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
   const fmtTime = ms => fmtDate(ms) + ' ' + p2(new Date(ms).getHours()) + ':' + p2(new Date(ms).getMinutes());
   const ms = ts => (ts && ts.toMillis ? ts.toMillis() : 0);
+  const t = (k, v) => CF.i18n.t(k, v);
 
   let db = null, me = null, unsubs = [], users = null, members = null, tab = 'requests', wired = false;
 
@@ -18,7 +19,7 @@
     if (db && me && me.uid === _me.uid) return;
     stop();
     db = _db; me = _me;
-    const fail = e => { console.warn('team', e.code); $('#teamList').innerHTML = '<p class="err">Could not load (' + esc(e.code) + '). Check the internet connection.</p>'; };
+    const fail = e => { console.warn('team', e.code); $('#teamList').innerHTML = '<p class="err">' + esc(t('loadErr', { e: e.code })) + '</p>'; };
     unsubs.push(db.collection('users').orderBy('lastLogin', 'desc').limit(1000).onSnapshot(qs => {
       users = qs.docs.map(d => ({ uid: d.id, ...d.data({ serverTimestamps: 'estimate' }) })); draw();
     }, fail));
@@ -37,6 +38,7 @@
     if (wired) return; wired = true;
     document.querySelectorAll('#teamTabs [data-t]').forEach(b => { b.onclick = () => { tab = b.dataset.t; draw(); }; });
     $('#teamList').addEventListener('click', onAction);
+    CF.i18n.onChange(() => draw());
   }
 
   const stateOf = u => {
@@ -51,7 +53,7 @@
   }
 
   function draw() {
-    if (!users || !members) { if (!$('#teamView').hidden) $('#teamList').innerHTML = '<p class="empty">Loading…</p>'; return; }
+    if (!users || !members) { if (!$('#teamView').hidden) $('#teamList').innerHTML = '<p class="empty">' + esc(t('loading')) + '</p>'; return; }
     const people = users.filter(u => u.uid !== me.uid).map(u => ({ ...u, state: stateOf(u) }));
     const by = s => people.filter(u => u.state === s);
     const waiting = by('waiting').length;
@@ -60,25 +62,22 @@
     $('#reqCount').textContent = waiting;
     $('#appCount').textContent = by('approved').length;
     document.querySelectorAll('#teamTabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === tab)));
-    $('#teamHint').textContent = {
-      requests: 'People who signed in and are waiting. Approve to let them use the app.',
-      approved: 'People who can use the app. Remove to stop their access.',
-      removed: 'People whose access you removed. Approve to give it back.',
-    }[tab];
+    $('#teamHint').textContent = t({ requests: 'hintReq', approved: 'hintApp', removed: 'hintRem' }[tab]);
     const rows = by({ requests: 'waiting', approved: 'approved', removed: 'removed' }[tab]);
-    $('#teamList').innerHTML = rows.length ? rows.map(item).join('') : '<p class="empty">Nobody here.</p>';
+    $('#teamList').innerHTML = rows.length ? rows.map(item).join('') : '<p class="empty">' + esc(t('nobody')) + '</p>';
   }
 
   function item(u) {
     const m = members[u.uid];
-    const since = u.state === 'waiting' ? 'Signed in ' + (u.lastLogin ? fmtTime(ms(u.lastLogin)) : '')
-      : (m && m.updatedAt ? (u.state === 'approved' ? 'Approved ' : 'Removed ') + fmtDate(ms(m.updatedAt)) : '');
+    const since = u.state === 'waiting' ? t('signedInAt', { t: u.lastLogin ? fmtTime(ms(u.lastLogin)) : '' })
+      : (m && m.updatedAt ? t(u.state === 'approved' ? 'approvedAt' : 'removedAt', { d: fmtDate(ms(m.updatedAt)) }) : '');
     const act = u.state === 'approved'
-      ? `<button type="button" class="btn sm" data-remove="${esc(u.uid)}">Remove</button>`
-      : `<button type="button" class="btn sm primary" data-approve="${esc(u.uid)}">Approve</button>`;
+      ? `<button type="button" class="btn sm" data-remove="${esc(u.uid)}">${esc(t('remove'))}</button>`
+      : `<button type="button" class="btn sm primary" data-approve="${esc(u.uid)}">${esc(t('approve'))}</button>`;
+    const chip = t({ waiting: 'stWaiting', approved: 'stApproved', removed: 'stRemoved' }[u.state]);
     return `<div class="item"><div class="who"><strong>${esc(u.name || '—')}</strong><span>${esc(u.email)}</span></div>
       <div class="meta"><span class="muted">${esc(since)}</span></div>
-      <span class="st ${u.state}">${u.state}</span><div class="acts">${act}</div></div>`;
+      <span class="st ${u.state}">${esc(chip)}</span><div class="acts">${act}</div></div>`;
   }
 
   async function onAction(e) {
@@ -86,7 +85,7 @@
     const uid = b.dataset.approve || b.dataset.remove; if (!uid) return;
     const u = (users || []).find(x => x.uid === uid) || {};
     const TS = firebase.firestore.Timestamp, FV = firebase.firestore.FieldValue;
-    if (b.dataset.remove && CF.confirmBox && !(await CF.confirmBox('Remove access for ' + (u.name || u.email) + '?'))) return;
+    if (b.dataset.remove && CF.confirmBox && !(await CF.confirmBox(t('confirmRemove', { name: u.name || u.email })))) return;
     b.disabled = true;
     try {
       if (b.dataset.approve) {
@@ -94,14 +93,14 @@
           email: u.email || '', name: u.name || '', validUntil: TS.fromMillis(FOREVER), blocked: false,
           updatedAt: FV.serverTimestamp(), updatedBy: me.email,
         }, { merge: true });
-        if (CF.toast) CF.toast('Approved: ' + (u.name || u.email));
+        if (CF.toast) CF.toast(t('toastApproved', { name: u.name || u.email }));
       } else {
         await db.collection('members').doc(uid).set({
           validUntil: TS.now(), blocked: true, updatedAt: FV.serverTimestamp(), updatedBy: me.email,
         }, { merge: true });
-        if (CF.toast) CF.toast('Removed: ' + (u.name || u.email));
+        if (CF.toast) CF.toast(t('toastRemoved', { name: u.name || u.email }));
       }
-    } catch (err) { console.error(err); if (CF.toast) CF.toast('Failed: ' + (err.code || err.message)); b.disabled = false; }
+    } catch (err) { console.error(err); if (CF.toast) CF.toast(t('failed', { e: err.code || err.message })); b.disabled = false; }
   }
 
   CF.team = { start, stop, allowed, show, hide, refreshBadge: () => badge(lastCount) };

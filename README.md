@@ -13,6 +13,9 @@ Abhi ka form: **Form Nakal** (Form for Copies), District Courts Jalandhar. Aage 
 
 Live: **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/** (GitHub Pages; Firebase par bhi: i-court-forms.web.app) · Setup ki poori jaankari: **[SETUP.md](SETUP.md)**
 
+## Bhasha
+App **English, हिंदी aur ਪੰਜਾਬੀ** mein chalti hai. Login screen par ya upar ki patti mein bhasha chunein; phone yaad rakhta hai. Form ke har khane ke neeche uska English naam bhi likha aata hai. **Court ka printed form (Word/PDF) hamesha English mein rehta hai**, isliye jaankari English mein hi bharein.
+
 ## Phone par
 - Form screen mein **Fill** aur **Preview** ke tabs, aur neeche **Word / PDF** ke button.
 - **Share PDF** se PDF seedha WhatsApp par.
@@ -25,6 +28,7 @@ Live: **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/** (Gi
 | `index.html` | Login, approval ka intezaar, home aur form screen |
 | `js/team.js` | Team screen (sirf malik): Requests / Approved / Removed |
 | `js/config.js` | **Aapki settings:** Firebase config, WhatsApp number |
+| `js/i18n.js` | Bhasha: English / हिंदी / ਪੰਜਾਬੀ ke saare shabd |
 | `js/gate.js` | Login aur approval ki jaanch |
 | `js/engine.js` | Preview, PDF aur Word banane wala engine |
 | `js/app.js` | Forms ki list, fields, save, export |

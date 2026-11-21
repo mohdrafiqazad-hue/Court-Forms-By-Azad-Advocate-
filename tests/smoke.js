@@ -57,6 +57,35 @@ const pdfInfo = buf => {
     }
   }
 
+  // languages: English / हिंदी / ਪੰਜਾਬੀ
+  console.log('Languages');
+  const dictOk = await page.evaluate(() => Object.entries(CF.i18n.dict).filter(([k, v]) => k !== 'typeEnglish' && (v.length !== 3 || v.some(x => !x))).map(([k]) => k));
+  check(dictOk.length === 0, 'every interface text has English, Hindi and Punjabi' + (dictOk.length ? ': missing ' + dictOk.join(', ') : ''));
+  const formTr = await page.evaluate(() => CF.forms.map(f => {
+    const need = new Set([f.name, f.desc, f.court]);
+    f.fields.forEach(x => { if (x.group) need.add(x.group); if (x.label) need.add(x.label); if (x.hint) need.add(x.hint); (x.options || []).forEach(o => need.add(o[1])); });
+    return ['hi', 'pa'].flatMap(l => [...need].filter(k => !(f.tr && f.tr[l] && f.tr[l][k])).map(k => f.id + '/' + l + ': ' + k));
+  }).flat());
+  check(formTr.length === 0, 'every form field has Hindi and Punjabi names' + (formTr.length ? ': ' + formTr.slice(0, 5).join(' | ') : ''));
+  for (const [lang, idx] of [['pa', 2], ['hi', 1]]) {
+    await page.goto(APP + '#/'); await page.waitForSelector('#formList .card');
+    await page.selectOption('#home select.langsel', lang); await page.waitForTimeout(200);
+    const want = await page.evaluate(i => CF.i18n.dict.heroTitle[i], idx);
+    check((await page.textContent('#home .hero h1')) === want, lang + ': home screen in the chosen language');
+    await page.reload(); await page.waitForSelector('#formList .card');
+    check((await page.textContent('#home .hero h1')) === want && (await page.getAttribute('html', 'lang')) === lang, lang + ': choice remembered after reload');
+    await page.click('#formList .card'); await page.waitForSelector('#fields h3');
+    const h3 = await page.textContent('#fields h3');
+    const enLabels = await page.$$eval('#fields .en-label', els => els.length);
+    check(h3 !== 'Top of form' && enLabels > 10, lang + ': form fields translated, English name shown under each (' + enLabels + ')');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btnPdf')]);
+    const buf = fs.readFileSync(await dl.path()); const i = pdfInfo(buf);
+    check(i.pages === 1, lang + ': PDF still exports (1 page, printed form stays English)');
+  }
+  await page.goto(APP + '#/'); await page.waitForSelector('#formList .card');
+  await page.selectOption('#home select.langsel', 'en');
+  await page.click('#formList .card'); await page.waitForSelector('#paper svg');
+
   // phone layout
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   const pp = await phone.newPage();

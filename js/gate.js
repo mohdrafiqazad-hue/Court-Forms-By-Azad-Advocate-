@@ -10,6 +10,9 @@
   const C = window.ICF_CONFIG || {};
   const $ = s => document.querySelector(s);
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const t = (k, v) => (CF.i18n ? CF.i18n.t(k, v) : k);
+  const OUT_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>';
+  let lastAcct = null, lastWait = null;
 
   // Local testing switches — only on localhost, never on the live site.
   const local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -43,14 +46,15 @@
     if (CF.showApp) CF.showApp();
   }
   function renderAcct(m) {
+    lastAcct = m;
     const el = $('#acct'); if (!el) return;
     el.hidden = false;
     const first = String(m.name || m.email || '').split(/[\s@]/)[0];
     const face = m.photo ? `<img src="${esc(m.photo)}" alt="" referrerpolicy="no-referrer">` : esc(first.charAt(0).toUpperCase());
-    const role = m.admin ? 'Owner · <a href="#/team" class="teamlink">Team</a> <span class="badge" data-team-count hidden>0</span>' : 'Approved';
-    el.innerHTML = `<span class="avatar">${face}</span><span class="who"><b>${esc(m.name || m.email)}</b><small>${role}</small></span><button type="button" class="out" id="btnSignOut2">Sign out</button>`;
+    const role = m.admin ? `${esc(t('owner'))} · <a href="#/team" class="teamlink">${esc(t('team'))}</a> <span class="badge" data-team-count hidden>0</span>` : esc(t('approvedRole'));
+    el.innerHTML = `<span class="avatar">${face}</span><span class="who"><b>${esc(m.name || m.email)}</b><small>${role}</small></span><button type="button" class="out" id="btnSignOut2" title="${esc(t('signOut'))}">${OUT_ICON}<span>${esc(t('signOut'))}</span></button>`;
     $('#btnSignOut2').onclick = signOut;
-    if ($('#hello')) $('#hello').textContent = first ? 'Namaste, ' + first : 'Welcome';
+    if ($('#hello')) $('#hello').textContent = first ? t('greet', { name: first }) : t('welcome');
     if ($('#teamCard')) $('#teamCard').hidden = !m.admin;
     if (m.admin && CF.team) CF.team.refreshBadge();
   }
@@ -99,9 +103,7 @@
   function loginError(e) {
     if (!e || ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(e.code)) return;
     console.error(e);
-    $('#loginMsg').textContent = e.code === 'auth/network-request-failed' ? 'No internet connection. Please try again.'
-      : e.code === 'auth/unauthorized-domain' ? 'This website address is not allowed in Firebase yet (Authentication → Settings → Authorized domains).'
-      : 'Sign-in failed. Please try again.';
+    $('#loginMsg').textContent = t(e.code === 'auth/network-request-failed' ? 'errNet' : e.code === 'auth/unauthorized-domain' ? 'errDomain' : 'errSignin');
   }
   async function signOut() {
     writeCache(null); stopWatch();
@@ -165,17 +167,21 @@
 
   // ------------------------------------------------------------ waiting screen
   function showWait(me, removed) {
-    $('#waitHello').textContent = 'Hello' + (me.name ? ', ' + me.name.split(' ')[0] : '') + '!';
-    $('#waitWho').textContent = me.email;
-    $('#waitTitle').textContent = removed ? 'Access removed' : 'Waiting for approval';
-    $('#waitText').textContent = removed
-      ? 'The owner has removed your access to i Court Forms. Contact the owner if you think this is a mistake.'
-      : 'Your request has been sent to the owner. This screen opens the app by itself as soon as you are approved.';
-    const wa = String(C.supportWhatsApp || '').replace(/\D/g, '');
-    $('#waitWa').hidden = !wa;
-    if (wa) $('#waitWa').href = 'https://wa.me/' + wa + '?text=' + encodeURIComponent('Please approve my i Court Forms access: ' + me.name + ' (' + me.email + ')');
+    lastWait = [me, removed];
+    paintWait();
     show('gWait');
   }
+  function paintWait() {
+    const [me, removed] = lastWait;
+    $('#waitHello').textContent = me.name ? t('hello', { name: me.name.split(' ')[0] }) : t('helloNoName');
+    $('#waitWho').textContent = me.email;
+    $('#waitTitle').textContent = t(removed ? 'removedTitle' : 'waitTitle');
+    $('#waitText').textContent = t(removed ? 'removedText' : 'waitText');
+    const wa = String(C.supportWhatsApp || '').replace(/\D/g, '');
+    $('#waitWa').hidden = !wa;
+    if (wa) $('#waitWa').href = 'https://wa.me/' + wa + '?text=' + encodeURIComponent(t('waMsg', { who: me.name + ' (' + me.email + ')' }));
+  }
+  if (CF.i18n) CF.i18n.onChange(() => { if (lastAcct && !$('#acct').hidden) renderAcct(lastAcct); if (lastWait) paintWait(); });
 
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
 })();
