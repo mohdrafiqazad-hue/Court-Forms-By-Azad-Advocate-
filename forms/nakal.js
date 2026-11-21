@@ -4,6 +4,7 @@
 (function () {
   'use strict';
   const { linesOf, P, clean, cellList } = window.CF.util;
+  const CT = window.CF.caseTypes;
   const HEAD = 10.5, DATA = 11, BIG = 15;
 
   const FIELDS = [
@@ -14,7 +15,11 @@
     { key: 'reqDate', label: 'Date', type: 'text', placeholder: 'DD.MM.YYYY', today: true },
 
     { group: 'Case particulars' },
-    { key: 'nature', label: 'Nature of Case: Civil, Revenue, Criminal, Misc. or Appeal', type: 'area', rows: 3 },
+    // optionsAsIs: the case types stay in English in every language (court list); the first option is translated
+    { key: 'nature', label: 'Nature of Case: Civil, Revenue, Criminal, Misc. or Appeal', type: 'choice', optionsAsIs: true,
+      options: [['', 'Select the type of case']].concat(CT.list.map(x => [x, x])), hint: 'Scroll and pick the type' },
+    { key: 'caseNo', label: 'Case Number (optional)', type: 'text', placeholder: 'e.g. 102/2024',
+      hint: 'Printed with the type, e.g. Case No. COMA/102/2024. Leave empty if there is none.' },
     { key: 'plaintiff', label: 'Plaintiff or Complainant', type: 'area', rows: 2 },
     { key: 'defendant', label: 'Defendant or Accused / Respondent', type: 'area', rows: 2 },
     { key: 'claim', label: 'Nature of Claim / Value of Suit or Details of Offence', type: 'area', rows: 2 },
@@ -60,6 +65,10 @@
       'By Registered Post': 'रजिस्टर्ड डाक से (By Registered Post)',
       'Date': 'तारीख़',
       'Nature of Case: Civil, Revenue, Criminal, Misc. or Appeal': 'केस की किस्म: दीवानी, माल, फ़ौजदारी, विविध या अपील',
+      'Select the type of case': 'केस की किस्म चुनें',
+      'Scroll and pick the type': 'सूची में से केस की किस्म चुनें',
+      'Case Number (optional)': 'केस नंबर (ज़रूरी नहीं)',
+      'Printed with the type, e.g. Case No. COMA/102/2024. Leave empty if there is none.': 'किस्म के साथ छपेगा, जैसे Case No. COMA/102/2024. नंबर न हो तो खाली छोड़ दें।',
       'Plaintiff or Complainant': 'वादी या शिकायतकर्ता',
       'Defendant or Accused / Respondent': 'प्रतिवादी या आरोपी / प्रत्यर्थी',
       'Nature of Claim / Value of Suit or Details of Offence': 'दावे की किस्म / दावे की कीमत या अपराध का विवरण',
@@ -97,6 +106,10 @@
       'By Registered Post': 'ਰਜਿਸਟਰਡ ਡਾਕ ਰਾਹੀਂ (By Registered Post)',
       'Date': 'ਤਾਰੀਖ਼',
       'Nature of Case: Civil, Revenue, Criminal, Misc. or Appeal': 'ਕੇਸ ਦੀ ਕਿਸਮ: ਦੀਵਾਨੀ, ਮਾਲ, ਫ਼ੌਜਦਾਰੀ, ਫੁਟਕਲ ਜਾਂ ਅਪੀਲ',
+      'Select the type of case': 'ਕੇਸ ਦੀ ਕਿਸਮ ਚੁਣੋ',
+      'Scroll and pick the type': 'ਸੂਚੀ ਵਿੱਚੋਂ ਕੇਸ ਦੀ ਕਿਸਮ ਚੁਣੋ',
+      'Case Number (optional)': 'ਕੇਸ ਨੰਬਰ (ਜ਼ਰੂਰੀ ਨਹੀਂ)',
+      'Printed with the type, e.g. Case No. COMA/102/2024. Leave empty if there is none.': 'ਕਿਸਮ ਦੇ ਨਾਲ ਛਪੇਗਾ, ਜਿਵੇਂ Case No. COMA/102/2024. ਨੰਬਰ ਨਾ ਹੋਵੇ ਤਾਂ ਖਾਲੀ ਛੱਡ ਦਿਓ।',
       'Plaintiff or Complainant': 'ਮੁੱਦਈ ਜਾਂ ਸ਼ਿਕਾਇਤਕਰਤਾ',
       'Defendant or Accused / Respondent': 'ਮੁੱਦਾਲਾ ਜਾਂ ਦੋਸ਼ੀ / ਜਵਾਬਦੇਹ',
       'Nature of Claim / Value of Suit or Details of Offence': 'ਦਾਅਵੇ ਦੀ ਕਿਸਮ / ਦਾਅਵੇ ਦੀ ਕੀਮਤ ਜਾਂ ਜੁਰਮ ਦਾ ਵੇਰਵਾ',
@@ -120,7 +133,7 @@
 
   function build(d) {
     const { cells, add } = cellList();
-    const dat = k => linesOf(d[k]).map(t => P(t, DATA));
+    const dat = k => linesOf(k === 'nature' ? natureText(d) : d[k]).map(t => P(t, DATA));
 
     // r0 — top boxes
     add(0, 0, 4, 1, [P('Ordinary', BIG, { bold: true, strike: d.copyType === 'urgent' }), P('Urgent', BIG, { bold: true, strike: d.copyType === 'ordinary' })]);
@@ -157,11 +170,19 @@
     return cells;
   }
 
+  // Case number: type code + number (COMA/55/2024); older free-text natures keep the number they contain
+  const caseNumber = d => CT.number(d.nature, d.caseNo) || (clean(d.nature).match(/[A-Z]{2,}[\/\-][\w\/\-]+/) || [''])[0];
+  // Nature of Case box: the chosen type, then "Case No. …" when a number is given
+  function natureText(d) {
+    const no = CT.number(d.nature, d.caseNo);
+    return [clean(d.nature).trim(), no && 'Case No. ' + no].filter(Boolean).join('\n');
+  }
+
   // Name shown in "My cases": parties and case number
   function caseTitle(d) {
     const first = s => clean(s).split('\n')[0].trim();
     const pl = first(d.plaintiff), df = first(d.defendant);
-    const cn = (clean(d.nature).match(/[A-Z]{2,}[\/\-][\w\/\-]+/) || [''])[0];
+    const cn = caseNumber(d);
     let t = pl && df ? pl + ' vs ' + df : (pl || df);
     if (cn) t = t ? t + ' · ' + cn : cn;
     return t.slice(0, 120);
@@ -170,7 +191,7 @@
   function fileBase(d, orient) {
     const part = s => clean(s).split('\n')[0].replace(/[^A-Za-z0-9 ]+/g, ' ').trim().replace(/ +/g, '_');
     const pl = part(d.plaintiff), df = part(d.defendant);
-    const cn = (clean(d.nature).match(/[A-Z]{2,}[\/\-][\w\/\-]+/) || [''])[0].replace(/[\/\-]/g, '_');
+    const cn = caseNumber(d).replace(/[^A-Za-z0-9]+/g, '_');
     const bits = ['Nakal_Form'];
     if (pl && df) bits.push(pl + '_vs_' + df); else if (pl || df) bits.push(pl || df);
     if (cn) bits.push(cn);
@@ -192,7 +213,7 @@
     fields: FIELDS,
     tr: TR,
     // Client book → a client's saved case fills these form fields (case keys: nature, plaintiff, defendant, claim, place, court, decision)
-    clientCaseMap: { nature: 'nature', plaintiff: 'plaintiff', defendant: 'defendant', claim: 'claim', village: 'place', court: 'court', decision: 'decision' },
+    clientCaseMap: { nature: 'nature', caseNo: 'caseNo', plaintiff: 'plaintiff', defendant: 'defendant', claim: 'claim', village: 'place', court: 'court', decision: 'decision' },
     // Client book: which form fields a saved client's own details fill (client keys: name, father, occupation, address, po, ps, tehsil, district)
     clientTargets: [
       { label: 'Plaintiff or Complainant', map: { plaintiff: 'name' } },

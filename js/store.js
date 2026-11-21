@@ -54,7 +54,7 @@
   // Client book: { id, name, father, occupation, address, po, ps, tehsil, district, phone, notes,
   //   cases: [{ id, nature, plaintiff, defendant, claim, place, court, decision }] }
   const CLIENT_KEYS = ['name', 'father', 'occupation', 'address', 'po', 'ps', 'tehsil', 'district', 'phone', 'notes'];
-  const CASE_KEYS = ['nature', 'plaintiff', 'defendant', 'claim', 'place', 'court', 'decision'];
+  const CASE_KEYS = ['nature', 'caseNo', 'plaintiff', 'defendant', 'claim', 'place', 'court', 'decision'];
   const cleanCase = k => { const o = { id: typeof k.id === 'string' && k.id ? k.id.slice(0, 40) : newId() }; CASE_KEYS.forEach(f => { o[f] = typeof k[f] === 'string' ? k[f].slice(0, 2000) : ''; }); return o; };
   const cleanClient = c => {
     const o = {}; CLIENT_KEYS.forEach(k => { o[k] = typeof c[k] === 'string' ? c[k].slice(0, 2000) : ''; });

@@ -113,7 +113,15 @@
   }
   const remember = () => S.history.add(form.id, data, keysOf(form).filter(k => (form.fields.find(x => x.key === k) || {}).type !== 'choice'));
   function fillInputs() {
-    for (const f of form.fields) if (f.key) { const el = document.getElementById('f_' + f.key); if (el) el.value = data[f.key] || ''; }
+    for (const f of form.fields) if (f.key) { const el = document.getElementById('f_' + f.key); if (el) setVal(el, data[f.key]); }
+  }
+  // Set an input's value; a list keeps an older value that is not one of its options (e.g. a nature typed before the list)
+  function setVal(el, v) {
+    v = String(v || '');
+    if (el.tagName === 'SELECT' && v && ![...el.options].some(o => o.value === v)) {
+      const o = document.createElement('option'); o.value = v; o.textContent = v.replace(/\s*\n\s*/g, ' · '); el.appendChild(o);
+    }
+    el.value = v;
   }
 
   let timer = 0;
@@ -321,13 +329,13 @@
   // ------------------------------------------------------------ Client book (each client with their cases)
   const CL = S.clients;
   const CLIENT_LABEL = { name: 'cName', father: 'cFather', occupation: 'cOccupation', address: 'cAddress', po: 'cPo', ps: 'cPs', tehsil: 'cTehsil', district: 'cDistrict', phone: 'cPhone', notes: 'cNotes' };
-  const CASE_LABEL = { nature: 'kNature', plaintiff: 'kPlaintiff', defendant: 'kDefendant', claim: 'kClaim', place: 'kPlace', court: 'kCourt', decision: 'kDecision' };
+  const CASE_LABEL = { nature: 'kNature', caseNo: 'kCaseNo', plaintiff: 'kPlaintiff', defendant: 'kDefendant', claim: 'kClaim', place: 'kPlace', court: 'kCourt', decision: 'kDecision' };
   let clientEdit = null; // client being edited in the sheet (with a working copy of its cases)
   let caseEdit = -1;     // which of clientEdit.cases is open in the case editor
   const firstLine = s => String(s || '').split('\n')[0].trim();
   const caseName = k => {
     const pl = firstLine(k.plaintiff), df = firstLine(k.defendant);
-    const no = (String(k.nature || '').match(/[A-Z]{2,}[\/\-][\w\/\-]+/) || [])[0]; // e.g. COMA/102/2022
+    const no = CF.caseTypes.number(k.nature, k.caseNo) || (String(k.nature || '').match(/[A-Z]{2,}[\/\-][\w\/\-]+/) || [])[0]; // e.g. COMA/102/2022
     return [no || firstLine(k.nature), pl && df ? pl + ' vs ' + df : pl || df].filter(Boolean).join(' · ') || '—';
   };
   // A case built from what is filled in the form now (form.clientCaseMap: formKey → case key)
@@ -347,7 +355,7 @@
   }
   function paintClients(q) {
     const all = CL.all(); const n = q.trim().toLowerCase();
-    const text = c => CL.KEYS.map(k => c[k]).concat(...(c.cases || []).map(k => CL.CASE_KEYS.map(f => k[f]))).join(' ').toLowerCase();
+    const text = c => CL.KEYS.map(k => c[k]).concat(...(c.cases || []).map(k => CL.CASE_KEYS.map(f => k[f]).concat(caseName(k)))).join(' ').toLowerCase();
     const list = n ? all.filter(c => text(c).includes(n)) : all;
     const targets = (form && form.clientTargets) || [];
     const canCase = !!(form && form.clientCaseMap);
@@ -388,11 +396,20 @@
     grabClient();
     caseEdit = i;
     const k = clientEdit.cases[i] || {};
+    // a case particular uses the same kind of input as the form field it fills (e.g. the list of case types)
+    const fdef = f => form && form.clientCaseMap && form.fields.find(x => x.key && form.clientCaseMap[x.key] === f);
+    const input = f => {
+      const d = fdef(f);
+      if (d && d.type === 'choice') return `<select data-kk="${f}">${d.options.map(o => `<option value="${escH(o[0])}">${escH(ft(form, o[1]))}</option>`).join('')}</select>`;
+      if (d && d.type === 'text') return `<input data-kk="${f}" type="text" placeholder="${escH(d.placeholder || '')}" value="${escH(k[f] || '')}">`;
+      return `<textarea data-kk="${f}" rows="${f === 'place' ? 1 : 2}">${escH(k[f] || '')}</textarea>`;
+    };
     openSheet((clientEdit.name || t('newClient')) + ' · ' + t('clientCases'), `<div class="clientform">${CL.CASE_KEYS.map(f =>
-      `<label class="fld"><span>${escH(t(CASE_LABEL[f]))}</span><textarea data-kk="${f}" rows="${f === 'place' ? 1 : 2}">${escH(k[f] || '')}</textarea></label>`).join('')}</div>
+      `<label class="fld"><span>${escH(t(CASE_LABEL[f]))}</span>${input(f)}</label>`).join('')}</div>
       <div class="sheet-row"><button type="button" class="btn primary" id="btnCaseDone">${escH(t('done'))}</button>
       ${form && form.clientCaseMap ? `<button type="button" class="btn" id="btnCaseFromForm">${escH(t('fromForm'))}</button>` : ''}
       <button type="button" class="btn" id="btnCaseBack">${escH(t('back'))}</button></div>`);
+    document.querySelectorAll('#sheetBody select[data-kk]').forEach(el => setVal(el, k[el.dataset.kk]));
   }
 
   function useClient(id, ti) {
@@ -437,7 +454,7 @@
       case 'btnAddCase': editCase(clientEdit.cases.length); return true;
       case 'btnCaseBack': editClient(clientEdit, true); return true;
       case 'btnCaseFromForm':
-        for (const [fk, ck] of Object.entries(form.clientCaseMap)) { const el = $(`#sheetBody [data-kk="${ck}"]`); if (el && String(data[fk] || '').trim()) el.value = data[fk]; }
+        for (const [fk, ck] of Object.entries(form.clientCaseMap)) { const el = $(`#sheetBody [data-kk="${ck}"]`); if (el && String(data[fk] || '').trim()) setVal(el, data[fk]); }
         return true;
       case 'btnCaseDone': {
         const k = { ...(clientEdit.cases[caseEdit] || {}) }; let any = false;

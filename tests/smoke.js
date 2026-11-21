@@ -15,7 +15,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const TEST_DATA = {
   nakal: {
     reqDate: '12.11.2026',
-    nature: 'Criminal (Misc.) - Complaint\nCase No. COMA/55/2024',
+    nature: 'COMA - COMPLAINT ACT', caseNo: '55/2024',
     plaintiff: 'Asha Rani', defendant: 'Raj Kumar',
     claim: 'Complaint under Section 138 of the\nNegotiable Instruments Act, 1881',
     court: 'Sh. A. K. Verma, JMIC, Jalandhar\n(Original)',
@@ -27,8 +27,10 @@ const TEST_DATA = {
     aPO: 'Jalandhar', aTehsil: 'Jalandhar', aDistrict: 'Jalandhar',
   },
 };
+// fill an input, or pick an option in a list
+const set = async (p, sel, v) => ((await p.$eval(sel, el => el.tagName)) === 'SELECT' ? p.selectOption(sel, v) : p.fill(sel, v));
 async function fillTest(p, formId) {
-  for (const [k, v] of Object.entries(TEST_DATA[formId] || {})) await p.fill('#f_' + k, v);
+  for (const [k, v] of Object.entries(TEST_DATA[formId] || {})) await set(p, '#f_' + k, v);
   await p.waitForTimeout(150);
 }
 
@@ -84,7 +86,7 @@ const pdfInfo = buf => {
   check(dictOk.length === 0, 'every interface text has English, Hindi and Punjabi' + (dictOk.length ? ': missing ' + dictOk.join(', ') : ''));
   const formTr = await page.evaluate(() => CF.forms.map(f => {
     const need = new Set([f.name, f.desc, f.court]);
-    f.fields.forEach(x => { if (x.group) need.add(x.group); if (x.label) need.add(x.label); if (x.hint) need.add(x.hint); (x.options || []).forEach(o => need.add(o[1])); });
+    f.fields.forEach(x => { if (x.group) need.add(x.group); if (x.label) need.add(x.label); if (x.hint) need.add(x.hint); (x.options || []).slice(0, x.optionsAsIs ? 1 : undefined).forEach(o => need.add(o[1])); });
     return ['hi', 'pa'].flatMap(l => [...need].filter(k => !(f.tr && f.tr[l] && f.tr[l][k])).map(k => f.id + '/' + l + ': ' + k));
   }).flat());
   check(formTr.length === 0, 'every form field has Hindi and Punjabi names' + (formTr.length ? ': ' + formTr.slice(0, 5).join(' | ') : ''));
@@ -111,6 +113,25 @@ const pdfInfo = buf => {
   console.log('Saved cases');
   const yes = async () => { if (await page.isVisible('#confirm')) await page.click('#confirm [data-yes]'); };
   const val = k => page.inputValue('#f_' + k);
+  // Nature of Case: list of case types + optional case number
+  console.log('Case type list');
+  const paper = () => page.$$eval('#paper text', els => els.map(e => e.textContent).join(' | '));
+  await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#fields textarea');
+  await page.click('#btnClear'); await yes();
+  const nOpts = await page.$$eval('#f_nature option', o => o.length);
+  check(nOpts === 66, 'Nature of Case is a list of all case types (' + (nOpts - 1) + ')');
+  await page.selectOption('#f_nature', 'BA - BAIL APPLICATION'); await page.waitForTimeout(250);
+  check((await paper()).includes('BAIL') && !(await paper()).includes('Case No.'), 'type only: just the type is printed');
+  await page.fill('#f_caseNo', '12/2026'); await page.waitForTimeout(250);
+  check((await paper()).includes('Case No. BA/12/2026'), 'type + number: “Case No. BA/12/2026” printed');
+  await page.fill('#f_caseNo', 'BA/12/2026'); await page.waitForTimeout(250);
+  check((await paper()).includes('Case No. BA/12/2026') && !(await paper()).includes('BA/BA'), 'code typed with the number is not doubled');
+  await page.selectOption('#f_nature', 'TRAFFIC'); await page.fill('#f_caseNo', '7/2026'); await page.waitForTimeout(250);
+  check((await paper()).includes('Case No. 7/2026'), 'type without a code: number printed as typed');
+  await page.evaluate(() => localStorage.setItem('cf-form-nakal-v1', JSON.stringify({ data: { nature: 'Civil Suit\nCase No. CS/1/2020' }, orient: 'landscape' })));
+  await page.reload(); await page.waitForSelector('#paper svg');
+  check((await val('nature')) === 'Civil Suit\nCase No. CS/1/2020' && (await paper()).includes('CS/1/2020'), 'a nature typed before the list is kept and printed');
+
   await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#fields textarea');
   await page.click('#btnClear'); await yes();
   await fillTest(page, 'nakal');
@@ -202,11 +223,11 @@ const pdfInfo = buf => {
   await page.click('#btnClients'); await page.click('#btnNewClient');
   await page.fill('#sheetBody [data-ck="name"]', 'Asha Rani'); await page.fill('#sheetBody [data-ck="father"]', 'Mohan Lal');
   await page.click('#btnAddCase'); await page.click('#btnCaseFromForm');
-  check((await page.inputValue('#sheetBody [data-kk="nature"]')).includes('COMA/55/2024'), 'case editor takes the case particulars from the form');
+  check((await page.inputValue('#sheetBody [data-kk="nature"]')) === 'COMA - COMPLAINT ACT' && (await page.inputValue('#sheetBody [data-kk="caseNo"]')) === '55/2024', 'case editor takes the case particulars from the form');
   await page.click('#btnCaseDone');
   check((await page.$$('#sheetBody .ccases.edit .ccase')).length === 1, 'case added to the client');
   await page.click('#btnAddCase');
-  await page.fill('#sheetBody [data-kk="nature"]', 'Civil Suit\nCase No. CS/77/2025'); await page.fill('#sheetBody [data-kk="plaintiff"]', 'Asha Rani');
+  await page.selectOption('#sheetBody [data-kk="nature"]', 'CS - CIVIL SUIT'); await page.fill('#sheetBody [data-kk="caseNo"]', '77/2025'); await page.fill('#sheetBody [data-kk="plaintiff"]', 'Asha Rani');
   await page.fill('#sheetBody [data-kk="defendant"]', 'Kamal Kumar'); await page.fill('#sheetBody [data-kk="court"]', 'Sh. Amit Sharma, Civil Judge (Jr. Div.), Jalandhar');
   await page.fill('#sheetBody [data-kk="decision"]', 'Decided on 05.10.2026'); await page.click('#btnCaseDone');
   await page.click('#btnSaveClient');
@@ -216,12 +237,12 @@ const pdfInfo = buf => {
   await page.click('#btnClients');
   check((await page.$$('#clientList [data-case-fill]')).length === 2, 'client book shows the client’s cases with “Fill this case”');
   await page.click('#clientList [data-case-fill] >> nth=0');
-  check((await val('nature')).includes('COMA/55/2024') && (await val('plaintiff')) === 'Asha Rani' && (await val('defendant')) === 'Raj Kumar'
+  check((await val('nature')) === 'COMA - COMPLAINT ACT' && (await val('caseNo')) === '55/2024' && (await val('plaintiff')) === 'Asha Rani' && (await val('defendant')) === 'Raj Kumar'
     && (await val('court')).startsWith('Sh. A. K. Verma') && (await val('decision')).startsWith('Pending'), 'one tap fills every case particular');
   await page.click('#btnClients'); await page.click('#clientList [data-case-fill] >> nth=1');
-  check((await val('nature')).includes('CS/77/2025') && (await val('defendant')) === 'Kamal Kumar' && (await val('claim')) === '' && (await val('decision')) === 'Decided on 05.10.2026',
+  check((await val('nature')) === 'CS - CIVIL SUIT' && (await val('caseNo')) === '77/2025' && (await val('defendant')) === 'Kamal Kumar' && (await val('claim')) === '' && (await val('decision')) === 'Decided on 05.10.2026',
     'filling another case replaces the old particulars (empty ones cleared)');
-  await page.fill('#f_nature', 'Criminal\nCase No. CRM/9/2026'); await page.fill('#f_defendant', 'State of Punjab');
+  await page.selectOption('#f_nature', 'CRM - CRIMINAL MISC APPLICATION'); await page.fill('#f_caseNo', '9/2026'); await page.fill('#f_defendant', 'State of Punjab');
   await page.click('#btnClients'); await page.click('#clientList [data-case-save]');
   check(await page.evaluate(() => CF.store.clients.all()[0].cases.length) === 3, '“Save this form’s case here” adds the form’s case');
   await page.fill('#clientSearch', 'CRM/9/2026'); await page.waitForTimeout(80);
