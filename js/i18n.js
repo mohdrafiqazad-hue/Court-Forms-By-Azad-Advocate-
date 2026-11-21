@@ -187,6 +187,8 @@
     noClientCases: ['No cases yet. Tap “Add case”.', 'अभी कोई केस नहीं। “केस जोड़ें” दबाएँ।', 'ਹਾਲੇ ਕੋਈ ਕੇਸ ਨਹੀਂ। “ਕੇਸ ਜੋੜੋ” ਦਬਾਓ।'],
     needCase: ['Fill at least one detail of the case', 'केस की कम से कम एक जानकारी भरें', 'ਕੇਸ ਦੀ ਘੱਟੋ-ਘੱਟ ਇੱਕ ਜਾਣਕਾਰੀ ਭਰੋ'],
     done: ['Done', 'ठीक है', 'ਠੀਕ ਹੈ'],
+    pickOwn: ['Other — type it yourself', 'कोई और — खुद लिखें', 'ਹੋਰ — ਆਪ ਲਿਖੋ'],
+    pickOwnPh: ['Type it here', 'यहाँ लिखें', 'ਇੱਥੇ ਲਿਖੋ'],
     kNature: ['Type of case', 'केस की किस्म', 'ਕੇਸ ਦੀ ਕਿਸਮ'],
     kCaseNo: ['Case number', 'केस नंबर', 'ਕੇਸ ਨੰਬਰ'],
     kPlaintiff: ['Plaintiff / Complainant', 'वादी / शिकायतकर्ता', 'ਮੁੱਦਈ / ਸ਼ਿਕਾਇਤਕਰਤਾ'],

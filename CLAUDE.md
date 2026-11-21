@@ -38,7 +38,7 @@ A form config (`forms/nakal.js` is the reference) has:
 - `title` — `{ text, size, top }` (top in points)
 - `grid` — `{ left, top, cols: [...], rows: [...] }` in DXA (1/1440 inch). Every grid square must be covered by exactly one cell.
 - `orientations` — e.g. `['landscape', 'portrait']`; `defaultOrient`
-- `fields` — inputs: `{ group }` headings, or `{ key, label, type: 'text'|'area'|'choice', rows, options, hint, placeholder, today, profile }` (`profile: true` = the user's own details, filled by "My details"; reuse the same keys across forms, e.g. `aName`, `aDistrict`)
+- `fields` — inputs: `{ group }` headings, or `{ key, label, type: 'text'|'area'|'choice'|'pick', rows, options, hint, placeholder, today, profile }` (`pick` = a list to tap plus "Other — type it yourself", which opens a box; the value stored and printed is the chosen English text or what was typed, e.g. Nakal's Purpose) (`profile: true` = the user's own details, filled by "My details"; reuse the same keys across forms, e.g. `aName`, `aDistrict`)
 - `caseTitle(data)` — name shown in My cases (e.g. parties and case no.)
 - `clientCaseMap` — `{ formKey: caseKey }`: which form fields a client's saved case fills (case keys: nature, caseNo, plaintiff, defendant, claim, place, court, decision)
 - `clientTargets` — `[{ label, map: { formKey: clientKey }, fromForm? }]`: where a client's own details can be filled (client keys: name, father, occupation, address, po, ps, tehsil, district)

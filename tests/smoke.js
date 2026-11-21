@@ -19,7 +19,7 @@ const TEST_DATA = {
     plaintiff: 'Asha Rani', defendant: 'Raj Kumar',
     claim: 'Complaint under Section 138 of the\nNegotiable Instruments Act, 1881',
     court: 'Sh. A. K. Verma, JMIC, Jalandhar\n(Original)',
-    decision: 'Pending\nNext Date: 10.01.2027', purpose: 'For Record',
+    decision: 'Pending\nNext Date: 10.01.2027', purpose: 'Record',
     copies: 'Uncertified copy of the complete court file, i.e. Complaint, Affidavit, all Documents, all Orders of the Court and all Statements',
     seal: 'Through Counsel\nTest Advocate',
     aName: 'Test Advocate,\nAdvocate (Counsel)', aWork: 'Counsel',
@@ -128,16 +128,28 @@ const pdfInfo = buf => {
   check((await paper()).includes('Case No. BA/12/2026') && !(await paper()).includes('BA/BA'), 'code typed with the number is not doubled');
   await page.selectOption('#f_nature', 'TRAFFIC'); await page.fill('#f_caseNo', '7/2026'); await page.waitForTimeout(250);
   check((await paper()).includes('Case No. 7/2026'), 'type without a code: number printed as typed');
-  await page.evaluate(() => localStorage.setItem('cf-form-nakal-v1', JSON.stringify({ data: { nature: 'Civil Suit\nCase No. CS/1/2020' }, orient: 'landscape' })));
+  await page.evaluate(() => localStorage.setItem('cf-form-nakal-v1', JSON.stringify({ data: { nature: 'Civil Suit\nCase No. CS/1/2020', purpose: 'For filing appeal' }, orient: 'landscape' })));
   await page.reload(); await page.waitForSelector('#paper svg');
   check((await val('nature')) === 'Civil Suit\nCase No. CS/1/2020' && (await paper()).includes('CS/1/2020'), 'a nature typed before the list is kept and printed');
+  // Purpose: list + Other (type it yourself)
+  check((await val('purpose')) !== 'For filing appeal' && await page.isVisible('#f_purpose_own') && (await page.inputValue('#f_purpose_own')) === 'For filing appeal', 'Purpose typed before shows under Other');
+  const pOpts = await page.$$eval('#f_purpose option', o => o.map(x => x.textContent));
+  check(pOpts.length === 12 && pOpts.includes('Personal Record') && pOpts.includes('Office Use') && pOpts[11].startsWith('Other'), 'Purpose is a list of 10 purposes + Other');
+  await page.selectOption('#f_purpose', 'High Court'); await page.waitForTimeout(250);
+  check(!(await page.isVisible('#f_purpose_own')) && (await paper()).includes('High Court') && !(await paper()).includes('For filing appeal'), 'picking a purpose prints it, the typing box hides');
+  await page.selectOption('#f_purpose', { index: 11 });
+  check(await page.isVisible('#f_purpose_own') && await page.evaluate(() => document.activeElement.id) === 'f_purpose_own', 'Other opens a box to type');
+  await page.fill('#f_purpose_own', 'For Supreme Court'); await page.waitForTimeout(250);
+  check((await paper()).includes('For Supreme Court') && !(await paper()).includes('High Court'), 'typed purpose is printed');
+  await page.reload(); await page.waitForSelector('#paper svg');
+  check((await page.inputValue('#f_purpose_own')) === 'For Supreme Court' && await page.isVisible('#f_purpose_own'), 'typed purpose is kept after reopening');
 
   await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#fields textarea');
   await page.click('#btnClear'); await yes();
   await fillTest(page, 'nakal');
   await page.click('#btnSaveCase'); await page.waitForTimeout(150);
   check((await page.textContent('#caseChip')).includes('Asha Rani vs Raj Kumar'), 'Save: case saved with a name from the parties and case no.');
-  await page.fill('#f_purpose', 'For filing appeal'); await page.click('#btnSaveCase');
+  await page.selectOption('#f_purpose', 'Appeal'); await page.click('#btnSaveCase');
   check(await page.evaluate(() => CF.store.cases.all().length) === 1, 'Save again updates the same case');
   await page.click('#btnClear'); await yes();
   check(await page.isHidden('#caseChip') && (await val('plaintiff')) === '', 'New form: empty, not tied to the case');
@@ -147,7 +159,7 @@ const pdfInfo = buf => {
   await page.click('#btnCases'); await page.waitForSelector('#sheet:not([hidden]) .caserow');
   check((await page.$$('#caseList .caserow')).length === 1, 'My cases lists the saved case');
   await page.click('#caseList [data-case-open]'); await yes();
-  check((await val('plaintiff')) === 'Asha Rani' && (await val('purpose')) === 'For filing appeal', 'Open brings back every detail');
+  check((await val('plaintiff')) === 'Asha Rani' && (await val('purpose')) === 'Appeal', 'Open brings back every detail');
   await page.click('#btnCases'); await page.click('#caseList [data-case-copy]'); await yes();
   check(await page.isHidden('#caseChip') && (await val('plaintiff')) === 'Asha Rani', 'Copy: same details as a new, unsaved case');
   await page.fill('#f_reqDate', '01.01.2027'); await page.click('#btnSaveCase');

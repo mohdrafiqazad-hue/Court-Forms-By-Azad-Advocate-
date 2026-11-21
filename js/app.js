@@ -91,11 +91,13 @@
       const orig = !en && label !== f.label ? `<small class="en-label">${escH(f.label)}</small>` : '';
       html += `<label class="fld" for="${id}"><span>${escH(label)}${today}</span>${orig}`;
       if (f.type === 'choice') html += `<select id="${id}" data-k="${f.key}">${f.options.map(o => `<option value="${escH(o[0])}">${escH(ft(form, o[1]))}</option>`).join('')}</select>`;
+      else if (f.type === 'pick') html += `<select id="${id}" data-pick="${f.key}">${f.options.map(o => `<option value="${escH(o[0])}">${escH(ft(form, o[1]))}</option>`).join('')}<option value="${OWN}">${escH(t('pickOwn'))}</option></select>`
+        + `<textarea id="${id}_own" class="own" data-k="${f.key}" rows="1" placeholder="${escH(t('pickOwnPh'))}" autocapitalize="sentences" hidden></textarea>`;
       else if (f.type === 'area') html += `<textarea id="${id}" data-k="${f.key}" rows="${f.rows || 2}" autocapitalize="sentences"></textarea>`;
       else html += `<input id="${id}" data-k="${f.key}" type="text" placeholder="${escH(f.placeholder || '')}" autocapitalize="words">`;
       if (f.hint) html += `<small>${escH(ft(form, f.hint))}</small>`;
       html += `</label>`;
-      if (f.type !== 'choice') html += `<div class="recent" data-recent="${f.key}" hidden></div>`;
+      if (f.type !== 'choice' && f.type !== 'pick') html += `<div class="recent" data-recent="${f.key}" hidden></div>`;
     }
     $('#fields').innerHTML = html;
     paintRecent();
@@ -113,7 +115,14 @@
   }
   const remember = () => S.history.add(form.id, data, keysOf(form).filter(k => (form.fields.find(x => x.key === k) || {}).type !== 'choice'));
   function fillInputs() {
-    for (const f of form.fields) if (f.key) { const el = document.getElementById('f_' + f.key); if (el) setVal(el, data[f.key]); }
+    for (const f of form.fields) if (f.key) { const el = document.getElementById('f_' + f.key); if (el) f.type === 'pick' ? setPick(f, el) : setVal(el, data[f.key]); }
+  }
+  // A pick list: a listed value selects it; anything else is "Other" with the text in the box below
+  const OWN = '\u2026own';
+  function setPick(f, el, own) {
+    const v = String(data[f.key] || ''); const box = document.getElementById(el.id + '_own');
+    const listed = !own && f.options.some(o => o[0] === v);
+    el.value = listed ? v : OWN; box.hidden = listed; if (!listed) box.value = v;
   }
   // Set an input's value; a list keeps an older value that is not one of its options (e.g. a nature typed before the list)
   function setVal(el, v) {
@@ -484,6 +493,13 @@
   function init() {
     const fields = $('#fields');
     const onEdit = e => {
+      const pk = e.target.dataset.pick;
+      if (pk && form) { // a pick list: a listed value, or "Other" opens the box to type it
+        const own = e.target.value === OWN; data[pk] = own ? '' : e.target.value;
+        setPick(form.fields.find(x => x.key === pk), e.target, own); save(); schedule();
+        if (own) document.getElementById(e.target.id + '_own').focus();
+        return;
+      }
       const k = e.target.dataset.k; if (!k || !form) return;
       data[k] = e.target.value; save(); schedule();
     };
