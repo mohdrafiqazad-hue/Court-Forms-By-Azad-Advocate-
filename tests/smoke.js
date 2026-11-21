@@ -103,6 +103,11 @@ const pdfInfo = buf => {
   // offline
   const sw = await page.evaluate(async () => { const r = await navigator.serviceWorker.ready; return !!r.active; });
   check(sw, 'service worker active');
+  const cdp = await ctx.newCDPSession(page);
+  const man = await cdp.send('Page.getAppManifest');
+  check(man.errors.length === 0, 'app manifest has no errors' + (man.errors.length ? ': ' + JSON.stringify(man.errors) : ''));
+  const inst = await cdp.send('Page.getInstallabilityErrors');
+  check(inst.installabilityErrors.length === 0, 'browser says the web app is installable' + (inst.installabilityErrors.length ? ': ' + JSON.stringify(inst.installabilityErrors) : ''));
   await ctx.setOffline(true);
   await page.reload();
   check(await page.waitForSelector('#paper svg', { timeout: 5000 }).then(() => true, () => false), 'reload works offline');

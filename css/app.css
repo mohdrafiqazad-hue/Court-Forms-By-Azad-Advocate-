@@ -182,3 +182,15 @@ code { font-size: .92em; background: #f0ebe2; padding: 1px 5px; border-radius: 4
 #typeEn { margin: 8px 0 4px; }
 .acct .out { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 520px) { .acct .out span { display: none; } .acct .out { padding: 6px 8px; } }
+
+/* ---------- install & update ---------- */
+.installcard { margin-top: 12px; border-color: #d9c9e8; background: linear-gradient(180deg, #f9f6ff, #fff); }
+.installcard .ic { background: #efe8fa; color: #5b3b8c; }
+.installcard .btn { flex: none; }
+.ios-steps { margin-top: 6px; color: #5b3b8c !important; font-weight: 600; }
+.install-mini { text-align: center; margin: 4px 0 10px; }
+.install-mini .btn { display: inline-flex; align-items: center; gap: 6px; }
+.install-mini p { margin: 4px 0 0; }
+.updatebar { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px; background: var(--ink); color: #fff; padding: 8px 10px 8px 16px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.25); font-size: 14px; max-width: calc(100% - 24px); }
+.updatebar .btn { background: #f3d9a4; border-color: #f3d9a4; color: #4f1b10; font-weight: 700; }
+.updatebar span { white-space: nowrap; }

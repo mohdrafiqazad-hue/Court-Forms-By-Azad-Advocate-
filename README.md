@@ -16,6 +16,12 @@ Live: **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/** (Gi
 ## Bhasha
 App **English, हिंदी aur ਪੰਜਾਬੀ** mein chalti hai. Login screen par ya upar ki patti mein bhasha chunein; phone yaad rakhta hai. Form ke har khane ke neeche uska English naam bhi likha aata hai. **Court ka printed form (Word/PDF) hamesha English mein rehta hai**, isliye jaankari English mein hi bharein.
 
+## Web app (phone mein install)
+- Android / computer (Chrome, Edge): app mein **"Install the app"** card ya login screen par **Install** button dabayein, aur home screen par **i Court Forms** ka icon aa jayega.
+- iPhone (Safari): neeche **Share** → **Add to Home Screen**.
+- Install ke baad app apni window mein, bina browser ke, aur bina internet bhi khulti hai.
+- Naya version aane par upar **"New version available · Refresh"** aata hai.
+
 ## Phone par
 - Form screen mein **Fill** aur **Preview** ke tabs, aur neeche **Word / PDF** ke button.
 - **Share PDF** se PDF seedha WhatsApp par.

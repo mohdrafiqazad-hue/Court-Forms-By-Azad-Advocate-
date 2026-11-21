@@ -3,11 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#7a2e1f">
+<meta name="theme-color" content="#6b2617">
 <meta name="description" content="i Court Forms — fill court forms, see a live preview, and export Word and PDF in the exact printed format. Works offline.">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/favicon-48.png" sizes="48x48">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Court Forms">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="css/app.css">
 <title>i Court Forms</title>
 </head>
@@ -38,6 +42,10 @@
         <span data-i18n="google">Continue with Google</span>
       </button>
       <p id="loginMsg" class="err" role="alert"></p>
+      <div class="install-mini" data-install hidden>
+        <button type="button" class="btn sm" data-install-btn hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg> <span data-i18n="installTitle">Install the app</span></button>
+        <p class="small muted" data-install-ios hidden data-i18n="iosSteps">On iPhone: tap Share at the bottom, then “Add to Home Screen”.</p>
+      </div>
       <p class="small muted" data-i18n-html="agree">By continuing you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
     </div>
 
@@ -79,6 +87,11 @@
       <span class="badge big" data-team-count hidden>0</span>
       <svg class="chev" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
     </a>
+    <div id="installCard" class="teamcard installcard" data-install hidden>
+      <span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg></span>
+      <span class="tc-body"><strong data-i18n="installTitle">Install the app</strong><span data-i18n="installSub">Add i Court Forms to your home screen. Opens like an app and works offline.</span><span class="ios-steps" data-install-ios hidden data-i18n="iosSteps">On iPhone: tap Share at the bottom, then “Add to Home Screen”.</span></span>
+      <button type="button" class="btn primary sm" data-install-btn hidden data-i18n="installBtn">Install</button>
+    </div>
     <h2 class="list-h" data-i18n="forms">Forms</h2>
     <div id="formList" class="cards"></div>
     <h2 class="list-h" data-i18n="soonH">Coming soon</h2>
@@ -145,6 +158,7 @@
   </div>
 </section>
 
+<div id="updateBar" class="updatebar" hidden><span data-i18n="updateReady">New version available</span><button type="button" class="btn sm" id="btnReload" data-i18n="reload">Refresh</button></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="confirm" hidden><div class="box" role="dialog" aria-modal="true"><p></p><div class="row"><button class="btn" data-no data-i18n="cancel">Cancel</button><button class="btn primary" data-yes data-i18n="yes">Yes</button></div></div></div>
 
@@ -155,6 +169,7 @@
 <script src="lib/firebase-firestore-compat.js"></script>
 <script src="js/config.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/install.js"></script>
 <script src="js/engine.js"></script>
 <script src="forms/nakal.js"></script>
 <script src="js/team.js"></script>

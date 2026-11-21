@@ -22,7 +22,8 @@ Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Fir
 - `firebase.json`, `firestore.indexes.json` — Firebase Hosting (serves the repo root, ignores docs/tests) and emulator ports.
 - `terms.html`, `privacy.html` — drafts with [placeholders]; the owner must complete them.
 - `lib/` — bundled so the app needs no CDN: jsPDF 2.x, docx 9.x, Firebase compat SDK 13.1.0 (app, auth, firestore). Do not replace with CDN links.
-- `manifest.webmanifest`, `sw.js`, `icons/` — installable PWA, offline. `sw.js` never intercepts cross-origin or `/__/` (Firebase) requests.
+- `js/install.js` — "Install the app" card (home) / button (sign-in) via `beforeinstallprompt`; iPhone shows Share → Add to Home Screen steps; hidden when running installed. Also shows the "New version available · Refresh" bar on service-worker `controllerchange`.
+- `manifest.webmanifest`, `sw.js`, `icons/` (icon-192/512, maskable-512, apple-touch-icon, favicon-48; drawn by a script, maroon page + gold "i" seal) — installable PWA, offline. `sw.js` precaches with `cache: 'reload'` so a new version never stores stale files. `sw.js` never intercepts cross-origin or `/__/` (Firebase) requests.
 - `tests/smoke.js` (format), `tests/gate-e2e.js` (sign-in/approval/admin against emulators).
 - `.github/workflows/pages.yml` — publishes to GitHub Pages on push.
 - `.github/workflows/deploy.yml` — deploys Firebase Hosting + Firestore rules on push.
