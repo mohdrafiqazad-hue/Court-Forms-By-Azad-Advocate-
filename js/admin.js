@@ -1,5 +1,6 @@
-/* i Court Forms — admin panel: approve / reject payments, manage memberships.
-   Access is enforced by firestore.rules (admins/{uid}); this page only shows what the rules allow. */
+/* i Court Forms — admin panel: approve or remove the people who sign in.
+   Everyone who signs in appears under Requests until approved. Access is enforced by
+   firestore.rules (owner account / admins/{uid}); this page only shows what the rules allow. */
 (function () {
   'use strict';
   const C = window.ICF_CONFIG || {};
@@ -8,8 +9,7 @@
   const local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const emu = local && /[?&]emulator\b/.test(location.search);
   const FB = emu ? { apiKey: 'demo-key', authDomain: 'demo-icf.firebaseapp.com', projectId: 'demo-icf', appId: 'demo-app' } : (C.firebase || {});
-  const DAYS = (C.payment && C.payment.days) || 365;
-  const DAY = 86400000;
+  const FOREVER = Date.UTC(2099, 11, 31); // approval lasts until the owner removes it
 
   const p2 = x => String(x).padStart(2, '0');
   const fmtDate = ms => { const d = new Date(ms); return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
@@ -25,7 +25,7 @@
   if (emu) { auth.useEmulator('http://127.0.0.1:9099', { disableWarnings: true }); db.useEmulator('127.0.0.1', 8080); }
   const TS = firebase.firestore.Timestamp, FV = firebase.firestore.FieldValue;
 
-  let me = null, tab = 'pending', unsubPending = null, pending = [];
+  let me = null, tab = 'requests', unsubs = [], users = null, members = null;
 
   $('#btnIn').onclick = async () => {
     $('#aMsg').textContent = '';
@@ -37,122 +37,84 @@
   document.querySelectorAll('.atabs [data-t]').forEach(b => { b.onclick = () => { tab = b.dataset.t; draw(); }; });
 
   auth.onAuthStateChanged(async user => {
-    if (unsubPending) { unsubPending(); unsubPending = null; }
+    unsubs.forEach(u => u()); unsubs = []; users = members = null;
     me = user;
     $('#btnOut').hidden = !user; $('#who').textContent = user ? user.email : '';
     if (!user) { only('aLogin'); return; }
-    // Admin = the owner's Google account (or an extra admin in admins/). The database rules decide:
-    // only an admin may list everyone's pending payments.
+    // Admin = the owner's Google account (or an extra admin in admins/). The rules decide:
+    // only an admin may list everyone's profiles.
     let admin = false;
-    try { await db.collection('payments').where('status', '==', 'pending').limit(1).get(); admin = true; }
+    try { await db.collection('users').limit(1).get(); admin = true; }
     catch (e) { if (e.code !== 'permission-denied') console.warn(e); }
     if (!admin) { $('#myUid').textContent = user.uid; only('aNot'); return; }
     only('aMain');
-    unsubPending = db.collection('payments').where('status', '==', 'pending').onSnapshot(qs => {
-      pending = qs.docs.map(d => d.data({ serverTimestamps: 'estimate' })).sort((a, b) => ms(a.createdAt) - ms(b.createdAt));
-      $('#pendCount').textContent = pending.length;
-      if (tab === 'pending') draw();
-    }, e => toast('Could not load: ' + e.code));
-    draw();
+    const fail = e => toast('Could not load: ' + e.code);
+    unsubs.push(db.collection('users').orderBy('lastLogin', 'desc').limit(1000).onSnapshot(qs => {
+      users = qs.docs.map(d => ({ uid: d.id, ...d.data({ serverTimestamps: 'estimate' }) })); draw();
+    }, fail));
+    unsubs.push(db.collection('members').onSnapshot(qs => {
+      members = {}; qs.docs.forEach(d => { members[d.id] = d.data(); }); draw();
+    }, fail));
   });
 
   // ------------------------------------------------------------ views
-  async function draw() {
+  const stateOf = u => {
+    const m = members[u.uid];
+    if (m && ms(m.validUntil) > Date.now()) return 'approved';
+    if (m) return 'removed';
+    return 'waiting';
+  };
+
+  function draw() {
     document.querySelectorAll('.atabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === tab)));
     const L = $('#list');
-    if (tab === 'pending') {
-      $('#hint').textContent = 'Check each transaction ID and amount in your bank / UPI app before approving. Approve gives ' + DAYS + ' days.';
-      L.innerHTML = pending.length ? pending.map(payItem).join('') : '<p class="empty">No pending payments.</p>';
-      return;
-    }
-    L.innerHTML = '<p class="empty">Loading…</p>';
-    try {
-      if (tab === 'payments') {
-        $('#hint').textContent = 'Latest 200 payment claims.';
-        const qs = await db.collection('payments').orderBy('createdAt', 'desc').limit(200).get();
-        const rows = qs.docs.map(d => d.data());
-        L.innerHTML = rows.length ? rows.map(payItem).join('') : '<p class="empty">No payments yet.</p>';
-      } else if (tab === 'members') {
-        $('#hint').textContent = 'Everyone who has (or had) a membership.';
-        const qs = await db.collection('members').get();
-        const rows = qs.docs.map(d => ({ uid: d.id, ...d.data() })).sort((a, b) => ms(b.validUntil) - ms(a.validUntil));
-        L.innerHTML = rows.length ? rows.map(memberItem).join('') : '<p class="empty">No members yet.</p>';
-      } else if (tab === 'users') {
-        $('#hint').textContent = 'Everyone who has signed in (latest 300). "Give access" is for testers and free accounts.';
-        const [us, ms_] = await Promise.all([db.collection('users').orderBy('lastLogin', 'desc').limit(300).get(), db.collection('members').get()]);
-        const mem = {}; ms_.docs.forEach(d => { mem[d.id] = ms(d.data().validUntil); });
-        const rows = us.docs.map(d => ({ uid: d.id, ...d.data(), until: mem[d.id] || 0 }));
-        L.innerHTML = rows.length ? rows.map(userItem).join('') : '<p class="empty">No users yet.</p>';
-      }
-    } catch (e) { console.error(e); L.innerHTML = '<p class="err">Could not load: ' + esc(e.code || e.message) + '</p>'; }
+    if (!users || !members) { L.innerHTML = '<p class="empty">Loading…</p>'; return; }
+    const people = users.filter(u => u.uid !== me.uid).map(u => ({ ...u, state: stateOf(u) }));
+    const by = s => people.filter(u => u.state === s);
+    $('#reqCount').textContent = by('waiting').length;
+    $('#appCount').textContent = by('approved').length;
+    const hints = {
+      requests: 'People who signed in and are waiting. Approve to let them use the app.',
+      approved: 'People who can use the app. Remove to stop their access.',
+      removed: 'People whose access you removed. Approve to give it back.',
+    };
+    $('#hint').textContent = hints[tab];
+    const rows = by({ requests: 'waiting', approved: 'approved', removed: 'removed' }[tab]);
+    L.innerHTML = rows.length ? rows.map(item).join('') : '<p class="empty">Nobody here.</p>';
   }
 
-  function payItem(p) {
-    const acts = p.status === 'pending'
-      ? `<div class="acts"><button class="btn sm primary" data-approve="${esc(p.utr)}">Approve</button><button class="btn sm" data-reject="${esc(p.utr)}">Reject</button></div>` : '';
-    return `<div class="item"><div class="who"><strong>${esc(p.name || '—')}</strong><span>${esc(p.email)}</span></div>
-      <div class="meta">UTR <b>${esc(p.utr)}</b> · ₹${esc(p.amount)}<br><span class="muted">${p.createdAt ? fmtTime(ms(p.createdAt)) : ''}</span>${p.reason ? '<br><span class="muted">' + esc(p.reason) + '</span>' : ''}</div>
-      <span class="st ${esc(p.status)}">${esc(p.status)}</span>${acts}</div>`;
-  }
-  function memberItem(m) {
-    const until = ms(m.validUntil), active = until > Date.now();
-    return `<div class="item"><div class="who"><strong>${esc(m.name || '—')}</strong><span>${esc(m.email)}</span></div>
-      <div class="meta">Till ${until ? fmtDate(until) : '—'}${m.lastUtr ? '<br><span class="muted">UTR ' + esc(m.lastUtr) + '</span>' : ''}</div>
-      <span class="st ${active ? 'active' : 'expired'}">${active ? 'active' : 'expired'}</span>
-      <div class="acts"><button class="btn sm" data-extend="${esc(m.uid)}">+${DAYS} days</button>${active ? `<button class="btn sm" data-revoke="${esc(m.uid)}">Revoke</button>` : ''}</div></div>`;
-  }
-  function userItem(u) {
-    const active = u.until > Date.now();
+  function item(u) {
+    const m = members[u.uid];
+    const label = { waiting: 'waiting', approved: 'approved', removed: 'removed' }[u.state];
+    const since = u.state === 'waiting' ? 'Signed in ' + (u.lastLogin ? fmtTime(ms(u.lastLogin)) : '')
+      : (m && m.updatedAt ? (u.state === 'approved' ? 'Approved ' : 'Removed ') + fmtDate(ms(m.updatedAt)) : '');
+    const act = u.state === 'approved'
+      ? `<button class="btn sm" data-remove="${esc(u.uid)}">Remove</button>`
+      : `<button class="btn sm primary" data-approve="${esc(u.uid)}">Approve</button>`;
     return `<div class="item"><div class="who"><strong>${esc(u.name || '—')}</strong><span>${esc(u.email)}</span></div>
-      <div class="meta"><span class="muted">Last sign-in ${u.lastLogin ? fmtTime(ms(u.lastLogin)) : '—'}</span></div>
-      <span class="st ${active ? 'active' : ''}">${active ? 'member till ' + fmtDate(u.until) : 'not a member'}</span>
-      <div class="acts"><button class="btn sm" data-give="${esc(u.uid)}">${active ? '+' + DAYS + ' days' : 'Give access'}</button></div></div>`;
+      <div class="meta"><span class="muted">${esc(since)}</span></div>
+      <span class="st ${label}">${label}</span><div class="acts">${act}</div></div>`;
   }
 
   // ------------------------------------------------------------ actions
-  async function extend(uid, info, utr) {
-    const ref = db.collection('members').doc(uid);
-    const cur = await ref.get();
-    const from = Math.max(Date.now(), cur.exists ? ms(cur.data().validUntil) : 0);
-    return {
-      ref,
-      data: {
-        email: info.email || (cur.exists && cur.data().email) || '', name: info.name || (cur.exists && cur.data().name) || '',
-        validUntil: TS.fromMillis(from + DAYS * DAY), lastUtr: utr || 'manual',
-        updatedAt: FV.serverTimestamp(), updatedBy: me.email,
-      },
-    };
-  }
-
   $('#list').addEventListener('click', async e => {
     const b = e.target.closest('button'); if (!b) return;
+    const uid = b.dataset.approve || b.dataset.remove;
+    const u = (users || []).find(x => x.uid === uid) || {};
     b.disabled = true;
     try {
       if (b.dataset.approve) {
-        const utr = b.dataset.approve;
-        const p = (await db.collection('payments').doc(utr).get()).data();
-        const m = await extend(p.uid, p, utr);
-        const batch = db.batch();
-        batch.set(m.ref, m.data, { merge: true });
-        batch.update(db.collection('payments').doc(utr), { status: 'approved', decidedAt: FV.serverTimestamp(), decidedBy: me.email });
-        await batch.commit();
-        toast('Approved: ' + (p.name || p.email) + ' till ' + fmtDate(m.data.validUntil.toMillis()));
-      } else if (b.dataset.reject) {
-        const reason = window.prompt('Reason (the user will see this):', 'Payment not found for this transaction ID');
-        if (reason === null) { b.disabled = false; return; }
-        await db.collection('payments').doc(b.dataset.reject).update({ status: 'rejected', reason: reason.slice(0, 200), decidedAt: FV.serverTimestamp(), decidedBy: me.email });
-        toast('Rejected');
-      } else if (b.dataset.extend || b.dataset.give) {
-        const uid = b.dataset.extend || b.dataset.give;
-        const u = await db.collection('users').doc(uid).get();
-        const m = await extend(uid, u.exists ? u.data() : {}, null);
-        await m.ref.set(m.data, { merge: true });
-        toast('Access till ' + fmtDate(m.data.validUntil.toMillis()));
-        draw();
-      } else if (b.dataset.revoke) {
-        if (!window.confirm('End this membership now?')) { b.disabled = false; return; }
-        await db.collection('members').doc(b.dataset.revoke).update({ validUntil: TS.now(), updatedAt: FV.serverTimestamp(), updatedBy: me.email });
-        toast('Membership ended'); draw();
+        await db.collection('members').doc(uid).set({
+          email: u.email || '', name: u.name || '', validUntil: TS.fromMillis(FOREVER), blocked: false,
+          updatedAt: FV.serverTimestamp(), updatedBy: me.email,
+        }, { merge: true });
+        toast('Approved: ' + (u.name || u.email));
+      } else {
+        if (!window.confirm('Remove access for ' + (u.name || u.email) + '?')) { b.disabled = false; return; }
+        await db.collection('members').doc(uid).set({
+          validUntil: TS.now(), blocked: true, updatedAt: FV.serverTimestamp(), updatedBy: me.email,
+        }, { merge: true });
+        toast('Removed: ' + (u.name || u.email));
       }
     } catch (err) { console.error(err); toast('Failed: ' + (err.code || err.message)); b.disabled = false; }
   });

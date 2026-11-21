@@ -166,7 +166,7 @@
   }
 
   function route() {
-    if (CF.locked) return; // the sign-in / payment gate is showing
+    if (CF.locked) return; // the sign-in / approval gate is showing
     const m = location.hash.match(/^#\/f\/([\w-]+)/);
     const f = m && CF.forms.find(x => x.id === m[1]);
     if (f) { if (f !== form) openForm(f); } else showHome();

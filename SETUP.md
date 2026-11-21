@@ -1,6 +1,6 @@
-# i Court Forms — Setup guide (Firebase + payment)
+# i Court Forms — Setup guide (Firebase + approval)
 
-App ka flow: **Google se login → ₹100 UPI / Google Pay se payment → transaction ID daalna → aap Admin panel se approve karte hain → app apne aap khul jaati hai.**
+App ka flow: **Google se login → user aapki Requests list mein aata hai → aap Admin panel se Approve karte hain → uski app apne aap khul jaati hai.** Malik (`mohdrafiqazad@gmail.com`) ke liye app hamesha khuli hai.
 
 Ye sab Firebase ke **free plan (Spark)** par chalta hai. Credit card ki zaroorat nahi.
 
@@ -35,12 +35,8 @@ Ye sab Firebase ke **free plan (Spark)** par chalta hai. Credit card ki zaroorat
 3. **Production mode** chunein → Create.
 4. **Rules** tab kholein → wahan ka sab mita kar is repo ki `firestore.rules` file ka poora text paste karein → **Publish**.
 
-## Step 5: Payment ki settings
-`js/config.js` mein:
-- `upiId`: aapka **business / merchant UPI ID**. Google Pay for Business, PhonePe Business ya BharatPe mein free banta hai. Personal UPI ID par amount pehle se bhara hua link kai baar Google Pay rok deta hai, isliye business ID behtar hai.
-- `amount`: `100` (₹)
-- `days`: `365` (ek payment kitne din chalegi)
-- `supportWhatsApp`: aapka WhatsApp number, country code ke saath, sirf ankde (jaise `919876543210`). Ye intezaar wali screen par dikhega. Khaali chhod sakte hain.
+## Step 5: WhatsApp number (zaroori nahi)
+`js/config.js` mein `supportWhatsApp`: aapka number country code ke saath, sirf ankde (jaise `919876543210`). Intezaar wali screen par "Message the owner on WhatsApp" ka button dikhega. Khaali chhodne par button nahi dikhega.
 
 ## Step 6: Website online karein → https://i-court-forms.web.app (free)
 GitHub khud deploy karta hai (`.github/workflows/deploy.yml`). Har push par website aur database rules dono update hote hain, aur `sw.js` ka `VERSION` bhi apne aap badal jata hai. Bas ek baar **deploy key** deni hai:
@@ -69,24 +65,19 @@ Ab repo chahein toh wapas **private** kar sakte hain. Firebase Hosting ke liye p
 
 ## Step 7: Admin (malik)
 Kuch karne ki zaroorat nahi. **`mohdrafiqazad@gmail.com` hamesha admin hai** (ye `firestore.rules` mein likha hai). Is account se:
-- app **bina payment** ke khulti hai, aur home par "Owner · Admin panel" dikhta hai;
+- app **bina approval** ke khulti hai, aur home par "Owner · Admin panel" dikhta hai;
 - `https://i-court-forms.web.app/admin.html` seedha khulta hai.
 
 Koi aur admin jodna ho: admin page par us account ka UID dikhega → Firestore → collection `admins` → Document ID = woh UID → field `name` → Save.
 
-## Roz ka kaam (payment approve karna)
-1. Admin page → **Pending** tab.
-2. Har entry ka **UTR (transaction ID)** aur **₹ amount** apne bank ya UPI app ki history mein milayein.
-3. Mil gaya → **Approve**. User ki app turant khul jayegi.
-4. Nahi mila → **Reject** aur wajah likhein. User ko wajah dikhegi aur woh dobara try kar sakta hai.
-- **Users** tab → "Give access": testers, dosto ya free accounts ko bina payment ke access.
-- **Members** tab → "+365 days" (badhana) ya "Revoke" (band karna).
+## Roz ka kaam (approve karna)
+1. `https://i-court-forms.web.app/admin.html` kholein → **Requests** tab.
+2. Jisko app deni hai uske saamne **Approve** dabayein. Uski app turant khul jayegi.
+3. Kisi ki app band karni ho: **Approved** tab → **Remove**. Dobara deni ho: **Removed** tab → **Approve**.
 
-## Test kaise karein (live karne se pehle)
-1. `amount` thodi der ke liye `1` kar dein (GitHub par push hote hi deploy ho jayega).
-2. Doosre Google account se app kholein → ₹1 Google Pay se bhejein → transaction ID daalein.
-3. Admin page se Approve karein → app khulni chahiye.
-4. Wapas `amount: 100` kar dein.
+## Test kaise karein
+1. Kisi doosre Google account se `https://i-court-forms.web.app` kholein → login → "Waiting for approval" dikhega.
+2. Apne account se admin page → Requests → Approve → doosre account ki app khul jaani chahiye.
 
 ## Free plan ki seemayein (lagbhag)
 | Cheez | Free seema | Aapke liye matlab |
@@ -101,7 +92,7 @@ Seema paar hone par Firebase service rok deta hai, apne aap paisa nahi kaatta (S
 ```
 firebase emulators:start --only auth,firestore --project demo-icf
 python3 -m http.server 8002
-node tests/gate-e2e.js http://localhost:8002/     # login → payment → admin → unlock
+node tests/gate-e2e.js http://localhost:8002/     # login → waiting → owner approves/removes → unlock
 node tests/smoke.js http://localhost:8002/        # form export format
 ```
 `?emulator` aur `?nogate` sirf `localhost` par kaam karte hain, live site par nahi.

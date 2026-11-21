@@ -10,15 +10,6 @@ window.ICF_CONFIG = {
     appId: '1:131820138603:web:e4b0d904a4b42861acc12e',
   },
 
-  // Membership payment by UPI (Google Pay or any UPI app)
-  payment: {
-    upiId: '',              // your business / merchant UPI ID, e.g. icourtforms@okaxis
-    payeeName: 'i Court Forms',
-    amount: 100,            // rupees
-    days: 365,              // how long one payment unlocks the app
-    planLabel: '1 year',
-  },
-
-  // Optional: WhatsApp number (with country code, digits only, e.g. 919876543210) shown to users waiting for approval
+  // Optional: WhatsApp number (with country code, digits only, e.g. 919876543210) shown to users waiting for approval (a button to message you)
   supportWhatsApp: '',
 };

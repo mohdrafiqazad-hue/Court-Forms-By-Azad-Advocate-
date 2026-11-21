@@ -6,23 +6,23 @@ Owner: Mohammad Rafiq Azad, Advocate, Jalandhar.
 
 Forms so far: **Form Nakal** (Form for Copies — application for certified / uncertified copies).
 
-Access: Google sign-in (Firebase Auth) → ₹100 / 365-day membership paid by UPI (Google Pay deep link + QR) → user submits the 12-digit UPI transaction ID → owner approves in `admin.html` → app unlocks live. Owner setup steps are in `SETUP.md` (Hinglish).
+Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Firebase Auth) → the user is listed under Requests in `admin.html` and sees "Waiting for approval" → the owner approves → app unlocks live; Remove locks it again. No payment inside the app. The owner's account always gets in. Owner setup steps are in `SETUP.md` (Hinglish).
 
 ## Files
-- `index.html` — gate screens (`#gate`: loading, setup, login, pay, pending, offline), home (form list), form screen.
+- `index.html` — gate screens (`#gate`: loading, setup, login, wait, offline), home (form list), form screen.
 - `css/app.css` — styles. Mobile-first: under 820px the form screen has Fill / Preview tabs and a fixed bottom bar with the export buttons.
-- `js/config.js` — owner settings: Firebase web config, UPI ID, amount, days, support WhatsApp. Not secret.
-- `js/gate.js` — sign-in + membership gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Caches an active membership in localStorage (`icf-member-v1`) so the app opens offline. Listens live to `members/{uid}` and the user's `payments`. Admins (detected by a pending-payments probe the rules only allow for admins) get in free.
+- `js/config.js` — owner settings: Firebase web config, support WhatsApp. Not secret.
+- `js/gate.js` — sign-in + approval gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Writes `users/{uid}` at sign-in (that is the request), listens live to `members/{uid}`. Caches an approval in localStorage (`icf-member-v1`, at most 30 days) so the app opens offline. Admins (detected by listing `users`, which the rules only allow for admins) always get in.
 - `js/engine.js` — rendering engine shared by all forms (`CF.engine`: `layout`, `svg`, `pdf`, `docx`) and helpers (`CF.util`: `P`, `linesOf`, `clean`, `cellList`).
 - `js/app.js` — app shell: hash routing (`#/` home, `#/f/<id>` a form), field rendering, autosave, export, Web Share.
 - `forms/<id>.js` — one file per form. Each calls `CF.register({...})`.
-- `admin.html`, `js/admin.js` — admin panel (pending payments approve/reject, all payments, members extend/revoke, users give access).
-- `firestore.rules` — security. The owner account (email hard-coded in `isOwner()`) is always admin; `admins/{uid}` adds extra admins by hand in console. `users/{uid}` (profile written at sign-in), `payments/{utr}` (doc ID = 12-digit UTR, so one UTR can be claimed once; users create `status: 'pending'` only), `members/{uid}` (`validUntil` Timestamp; admin-only writes).
+- `admin.html`, `js/admin.js` — admin panel: Requests / Approved / Removed (live). Approve sets `members/{uid}.validUntil` to 2099-12-31; Remove sets it to now with `blocked: true`.
+- `firestore.rules` — security. The owner account (email hard-coded in `isOwner()`) is always admin; `admins/{uid}` adds extra admins by hand in console. `users/{uid}` (profile written at sign-in = request), `members/{uid}` (`validUntil`, `blocked`; admin-only writes).
 - `firebase.json`, `firestore.indexes.json` — Firebase Hosting (serves the repo root, ignores docs/tests) and emulator ports.
 - `terms.html`, `privacy.html` — drafts with [placeholders]; the owner must complete them.
-- `lib/` — bundled so the app needs no CDN: jsPDF 2.x, docx 9.x, Firebase compat SDK 13.1.0 (app, auth, firestore), qrcode-generator 2.0.4. Do not replace with CDN links.
+- `lib/` — bundled so the app needs no CDN: jsPDF 2.x, docx 9.x, Firebase compat SDK 13.1.0 (app, auth, firestore). Do not replace with CDN links.
 - `manifest.webmanifest`, `sw.js`, `icons/` — installable PWA, offline. `sw.js` never intercepts cross-origin or `/__/` (Firebase) requests.
-- `tests/smoke.js` (format), `tests/gate-e2e.js` (sign-in/payment/admin against emulators).
+- `tests/smoke.js` (format), `tests/gate-e2e.js` (sign-in/approval/admin against emulators).
 - `.github/workflows/deploy.yml` — deploys to Firebase Hosting + rules on push.
 - `.nojekyll` — for GitHub Pages, if used.
 
@@ -59,7 +59,7 @@ Localhost-only switches (ignored on the live site): `?nogate` skips the gate; `?
 firebase emulators:start --only auth,firestore --project demo-icf   # needs Java
 python3 -m http.server 8002
 node tests/smoke.js http://localhost:8002/ /tmp/cf-out              # format: exports, 1 page, size, phone, offline
-node tests/gate-e2e.js http://localhost:8002/ /tmp/cf-e2e           # login → pay → rules → admin approve/reject/revoke → unlock, offline
+node tests/gate-e2e.js http://localhost:8002/ /tmp/cf-e2e           # login → wait → rules → owner approve/remove → unlock, offline
 ```
 `gate-e2e.js` signs in with emulator test credentials (the real Google popup needs apis.google.com).
 
@@ -68,6 +68,6 @@ Live site: **https://i-court-forms.web.app** (Firebase project `i-court-forms`, 
 `.github/workflows/deploy.yml` deploys hosting and then `firestore.rules` on every push to `main` / `ccr-1ddb94dd-s0x9y0` (or by hand: Actions → Deploy to Firebase → Run workflow). It stamps `VERSION` in `sw.js` with the commit SHA, so installed apps update. Needs the repo secret `FIREBASE_SERVICE_ACCOUNT` (service account JSON with roles Firebase Admin, Service Usage Consumer and Firebase Rules Admin — the first alone gets 403s); without it the job skips. Manual alternative: `firebase deploy`.
 
 ## Known limits / next steps
-- Payment approval is manual (free Spark plan, no fees). Automatic: Razorpay + a Cloud Function webhook (needs Blaze plan and Razorpay KYC).
+- No in-app payment (owner's choice). An earlier version had UPI payment + transaction-ID claims (see git history) if it is wanted back.
 - The gate is client-side: form code ships to every browser, so a technical user could bypass it. Stronger: serve paid form configs from Firestore/Storage readable only by members.
 - More Jalandhar forms, then other Punjab districts; English + Punjabi; Play Store later (same code packaged with Capacitor; Play Billing there).

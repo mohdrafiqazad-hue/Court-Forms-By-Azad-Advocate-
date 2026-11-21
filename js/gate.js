@@ -1,7 +1,9 @@
-/* i Court Forms — sign-in and membership gate.
-   Flow: Google sign-in → (no active membership) pay by UPI / Google Pay → enter the 12-digit
-   UPI transaction ID → admin approves in admin.html → app unlocks by itself (live listener).
-   An active membership is cached on the device so the app also opens offline. */
+/* i Court Forms — sign-in and approval gate.
+   Flow: Google sign-in → the user appears in the owner's Requests list (admin.html) and sees
+   "waiting for approval" → the owner approves → the app opens by itself (live listener).
+   The owner removes someone the same way. The owner's own account always gets in.
+   An approval is cached on the device (re-checked online at least every 30 days) so the app
+   also opens offline. */
 (function () {
   'use strict';
   const CF = window.CF = window.CF || {};
@@ -19,12 +21,10 @@
 
   CF.gated = true; CF.locked = true;
   const FB = emu ? { apiKey: 'demo-key', authDomain: 'demo-icf.firebaseapp.com', projectId: 'demo-icf', appId: 'demo-app' } : (C.firebase || {});
-  const PAY = Object.assign({ upiId: '', payeeName: 'i Court Forms', amount: 100, days: 365, planLabel: '1 year' }, C.payment || {});
   const CACHE = 'icf-member-v1';
-  const SCREENS = ['gLoading', 'gSetup', 'gLogin', 'gPay', 'gPending', 'gOffline'];
+  const OFFLINE_DAYS = 30;
+  const SCREENS = ['gLoading', 'gSetup', 'gLogin', 'gWait', 'gOffline'];
 
-  const fmtDate = ms => { const d = new Date(ms); const p = x => String(x).padStart(2, '0'); return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear(); };
-  const fmtTime = ms => fmtDate(ms) + ' ' + new Date(ms).toTimeString().slice(0, 5);
   const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE) || 'null'); } catch (e) { return null; } };
   const writeCache = v => { try { v ? localStorage.setItem(CACHE, JSON.stringify(v)) : localStorage.removeItem(CACHE); } catch (e) { /* ignore */ } };
 
@@ -45,7 +45,7 @@
   function renderAcct(m) {
     const el = $('#acct'); if (!el) return;
     el.hidden = false;
-    const status = m.admin ? 'Owner · <a href="admin.html">Admin panel</a>' : 'Member till ' + fmtDate(m.validUntil);
+    const status = m.admin ? 'Owner · <a href="admin.html">Admin panel</a>' : 'Approved';
     el.innerHTML = `<span>${esc(m.name || m.email)}</span><span class="dot">·</span><span>${status}</span><button type="button" class="linkbtn" id="btnSignOut2">Sign out</button>`;
     $('#btnSignOut2').onclick = signOut;
   }
@@ -58,15 +58,13 @@
     if (emu) { auth.useEmulator('http://127.0.0.1:9099', { disableWarnings: true }); db.useEmulator('127.0.0.1', 8080); }
     CF.fb = { auth, db };
 
-    // Fast path: a cached, still-valid membership opens the app at once (also offline).
+    // Fast path: a cached approval opens the app at once (also offline).
     const cached = readCache();
     if (cached && cached.validUntil > Date.now()) unlock(cached); else show('gLoading');
 
     $('#btnGoogle').onclick = signIn;
     document.querySelectorAll('[data-signout]').forEach(b => { b.onclick = signOut; });
     $('#btnRetry').onclick = () => location.reload();
-    $('#payForm').addEventListener('submit', submitUtr);
-    $('#utr').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 12); $('#utrMsg').textContent = ''; });
 
     auth.getRedirectResult().catch(e => loginError(e));
     auth.onAuthStateChanged(user => {
@@ -106,38 +104,39 @@
     show('gLogin');
   }
 
-  // ------------------------------------------------------------ membership & payments (live)
+  // ------------------------------------------------------------ approval (live)
   let unsubs = [], expiryTimer = 0, offlineTimer = 0;
   function stopWatch() { unsubs.forEach(u => u()); unsubs = []; clearTimeout(expiryTimer); clearTimeout(offlineTimer); }
 
   function watch(user) {
     const { db } = CF.fb;
     const me = { uid: user.uid, email: user.email || '', name: user.displayName || '' };
-    let member, pays, admin; // undefined until first answer
+    let member, admin; // undefined until first answer
 
+    // Signing in is the request: the owner sees this profile in the Requests list.
     db.collection('users').doc(user.uid).set({
       email: me.email, name: me.name, photo: user.photoURL || '', lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
     }, { merge: true }).catch(e => console.warn('profile', e.code));
 
     const decide = () => {
-      if (member === undefined || pays === undefined || admin === undefined) return;
+      if (member === undefined || admin === undefined) return;
       clearTimeout(offlineTimer);
-      if (admin) { // the owner (or an extra admin) uses the app free
-        const m = { ...me, validUntil: Date.now() + 30 * 86400000, admin: true };
+      const cacheUntil = Date.now() + OFFLINE_DAYS * 86400000;
+      if (admin) { // the owner (or an extra admin) always gets in
+        const m = { ...me, validUntil: cacheUntil, admin: true };
         writeCache(m); unlock(m);
         return;
       }
       const until = member && member.validUntil ? member.validUntil.toMillis() : 0;
       if (until > Date.now()) {
-        const m = { ...me, validUntil: until };
+        const m = { ...me, validUntil: Math.min(until, cacheUntil) };
         writeCache(m); unlock(m);
         clearTimeout(expiryTimer);
         expiryTimer = setTimeout(decide, Math.min(until - Date.now() + 1000, 2 ** 31 - 1));
         return;
       }
       writeCache(null);
-      const pending = pays.find(p => p.status === 'pending');
-      if (pending) showPending(pending); else showPay(me, pays[0], until);
+      showWait(me, !!member); // member doc but not valid = access removed
     };
     const fail = e => {
       console.warn('gate', e.code || e);
@@ -146,89 +145,25 @@
     };
 
     unsubs.push(db.collection('members').doc(user.uid).onSnapshot(s => { member = s.exists ? s.data() : null; decide(); }, fail));
-    unsubs.push(db.collection('payments').where('uid', '==', user.uid).onSnapshot(qs => {
-      pays = qs.docs.map(d => d.data({ serverTimestamps: 'estimate' }))
-        .sort((a, b) => (b.createdAt ? b.createdAt.toMillis() : 0) - (a.createdAt ? a.createdAt.toMillis() : 0));
-      decide();
-    }, fail));
-    // Admin check: only an admin may list everyone's pending payments (firestore.rules decides).
-    db.collection('payments').where('status', '==', 'pending').limit(1).get()
+    // Admin check: only an admin may list everyone's profiles (firestore.rules decides).
+    db.collection('users').limit(1).get()
       .then(() => { admin = true; decide(); }, e => { admin = false; if (e.code !== 'permission-denied') console.warn('admin check', e.code); decide(); });
     // No answer for a while and no valid cache → probably offline
-    offlineTimer = setTimeout(() => { if (member === undefined || pays === undefined || admin === undefined) fail({ code: 'timeout' }); }, 12000);
+    offlineTimer = setTimeout(() => { if (member === undefined || admin === undefined) fail({ code: 'timeout' }); }, 12000);
   }
 
-  // ------------------------------------------------------------ pay screen
-  const upiParams = me => 'pa=' + encodeURIComponent(PAY.upiId) + '&pn=' + encodeURIComponent(PAY.payeeName)
-    + '&am=' + Number(PAY.amount).toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('i Court Forms ' + noteCode(me));
-  const noteCode = me => 'ICF-' + me.uid.slice(0, 6).toUpperCase();
-
-  function showPay(me, last, expiredAt) {
-    CF._me = me;
-    $('#payHello').textContent = 'Hello' + (me.name ? ', ' + me.name.split(' ')[0] : '') + '!';
-    $('#payWho').textContent = me.email;
-    $('#payPrice').textContent = '₹' + PAY.amount;
-    $('#payPlan').textContent = PAY.planLabel + ' membership';
-    let note = '';
-    if (expiredAt) note = `Your membership ended on ${fmtDate(expiredAt)}. Pay again to continue.`;
-    if (last && last.status === 'rejected') note = `Your last payment (transaction ID ${esc(last.utr)}) could not be verified${last.reason ? ': ' + esc(last.reason) : ''}. Please check and try again.`;
-    $('#payNote').innerHTML = note; $('#payNote').hidden = !note;
-
-    const ready = !!PAY.upiId;
-    $('#payReady').hidden = !ready; $('#payNotReady').hidden = ready;
-    if (ready) {
-      const q = upiParams(me);
-      const upi = 'upi://pay?' + q;
-      const ua = navigator.userAgent;
-      const android = /Android/i.test(ua), ios = /iPhone|iPad|iPod/i.test(ua);
-      const gpay = android ? 'intent://pay?' + q + '#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end'
-        : ios ? 'gpay://upi/pay?' + q : '';
-      $('#btnGpay').hidden = !gpay; if (gpay) $('#btnGpay').href = gpay;
-      $('#btnUpi').hidden = !(android || ios); $('#btnUpi').href = upi;
-      $('#qrWrap').open = !(android || ios);
-      $('#payAmount').textContent = '₹' + PAY.amount;
-      $('#upiId').textContent = PAY.upiId;
-      $('#noteCode').textContent = noteCode(me);
-      if (typeof qrcode === 'function') { const qr = qrcode(0, 'M'); qr.addData(upi); qr.make(); $('#qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); }
-      $('#btnCopyUpi').onclick = () => copy(PAY.upiId, $('#btnCopyUpi'));
-    }
-    show('gPay');
-  }
-
-  async function submitUtr(e) {
-    e.preventDefault();
-    const { db } = CF.fb; const me = CF._me; const msg = $('#utrMsg');
-    const utr = $('#utr').value.replace(/\D/g, '');
-    if (!/^\d{12}$/.test(utr)) { msg.textContent = 'The UPI transaction ID has 12 digits. You can find it in Google Pay under the payment details.'; return; }
-    const btn = $('#btnSubmitUtr'); btn.disabled = true; msg.textContent = '';
-    try {
-      await db.collection('payments').doc(utr).set({
-        uid: me.uid, email: me.email, name: me.name, utr, amount: Number(PAY.amount), plan: PAY.planLabel,
-        status: 'pending', createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-      $('#utr').value = '';
-    } catch (err) {
-      console.warn(err);
-      msg.textContent = err.code === 'permission-denied' ? 'This transaction ID has already been submitted. Please check the number.'
-        : err.code === 'unavailable' ? 'No internet connection. Please try again.' : 'Could not submit. Please try again.';
-    }
-    btn.disabled = false;
-  }
-
-  // ------------------------------------------------------------ pending screen
-  function showPending(p) {
-    $('#pendUtr').textContent = p.utr;
-    $('#pendAmt').textContent = '₹' + p.amount;
-    $('#pendTime').textContent = p.createdAt ? fmtTime(p.createdAt.toMillis()) : '';
+  // ------------------------------------------------------------ waiting screen
+  function showWait(me, removed) {
+    $('#waitHello').textContent = 'Hello' + (me.name ? ', ' + me.name.split(' ')[0] : '') + '!';
+    $('#waitWho').textContent = me.email;
+    $('#waitTitle').textContent = removed ? 'Access removed' : 'Waiting for approval';
+    $('#waitText').textContent = removed
+      ? 'The owner has removed your access to i Court Forms. Contact the owner if you think this is a mistake.'
+      : 'Your request has been sent to the owner. This screen opens the app by itself as soon as you are approved.';
     const wa = String(C.supportWhatsApp || '').replace(/\D/g, '');
-    $('#pendWa').hidden = !wa;
-    if (wa) $('#pendWa').href = 'https://wa.me/' + wa + '?text=' + encodeURIComponent('i Court Forms payment: transaction ID ' + p.utr + ', ' + (p.email || ''));
-    show('gPending');
-  }
-
-  async function copy(text, btn) {
-    try { await navigator.clipboard.writeText(text); const t = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = t; }, 1500); }
-    catch (e) { /* ignore */ }
+    $('#waitWa').hidden = !wa;
+    if (wa) $('#waitWa').href = 'https://wa.me/' + wa + '?text=' + encodeURIComponent('Please approve my i Court Forms access: ' + me.name + ' (' + me.email + ')');
+    show('gWait');
   }
 
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();

@@ -3,10 +3,8 @@ rules_version = '2';
 // i Court Forms — who may read and write what.
 //   Owner            mohdrafiqazad@gmail.com is always the admin (no setup needed)
 //   admins/{uid}     optional extra admins, made by hand in the Firebase console (document ID = UID)
-//   users/{uid}      profile the app writes at each sign-in
-//   payments/{utr}   a user's claim "I paid": document ID = the 12-digit UPI transaction ID,
-//                    so the same transaction ID can only ever be claimed once
-//   members/{uid}    membership (validUntil); only an admin can grant or change it
+//   users/{uid}      profile the app writes at each sign-in = an access request
+//   members/{uid}    approval (validUntil; blocked when removed); only an admin can write it
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
@@ -31,21 +29,6 @@ service cloud.firestore {
     match /members/{uid} {
       allow read: if own(uid) || isAdmin();
       allow write: if isAdmin();
-    }
-
-    match /payments/{utr} {
-      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
-      allow create: if signedIn()
-        && utr.matches('[0-9]{12}')
-        && request.resource.data.keys().hasOnly(['uid', 'email', 'name', 'utr', 'amount', 'plan', 'status', 'createdAt'])
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.utr == utr
-        && request.resource.data.amount is number
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt == request.time;
-      allow update: if isAdmin();
-      allow delete: if false;
     }
   }
 }

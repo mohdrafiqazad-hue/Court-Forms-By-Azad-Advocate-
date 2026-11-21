@@ -4,7 +4,7 @@ const VERSION = 'icf-v3';
 const FILES = [
   './', './index.html', './css/app.css',
   './js/config.js', './js/engine.js', './js/gate.js', './js/app.js', './forms/nakal.js',
-  './lib/jspdf.umd.min.js', './lib/docx.min.js', './lib/qrcode.js',
+  './lib/jspdf.umd.min.js', './lib/docx.min.js',
   './lib/firebase-app-compat.js', './lib/firebase-auth-compat.js', './lib/firebase-firestore-compat.js',
   './terms.html', './privacy.html',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png',

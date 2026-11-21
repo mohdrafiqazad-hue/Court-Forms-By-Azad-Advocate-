@@ -6,11 +6,12 @@ Abhi ka form: **Form Nakal** (Form for Copies), District Courts Jalandhar. Aage 
 
 ## App kaise khulti hai
 1. **Google se login**
-2. **₹100 membership** (1 saal): Google Pay ya kisi bhi UPI app se payment, phir 12 ankon ka UPI transaction ID daalna
-3. **Admin approve karta hai** (`admin.html`), aur app apne aap khul jaati hai
-4. Membership phone mein yaad rehti hai, toh app offline bhi khulti hai
+2. User ko **"Waiting for approval"** dikhta hai, aur woh aapke **Admin panel → Requests** mein aa jata hai
+3. Aap **Approve** karte hain, aur uski app apne aap khul jaati hai. **Remove** karne par band ho jaati hai.
+4. Malik (`mohdrafiqazad@gmail.com`) ke liye app hamesha khuli hai, aur Admin panel bhi: `https://i-court-forms.web.app/admin.html`
+5. Approval phone mein yaad rehti hai, toh app offline bhi khulti hai (har 30 din mein ek baar online check)
 
-Setup ke poore steps (Firebase, payment, website online karna, admin banna): **[SETUP.md](SETUP.md)**
+Live: **https://i-court-forms.web.app** · Setup ki poori jaankari: **[SETUP.md](SETUP.md)**
 
 ## Phone par
 - Form screen mein **Fill** aur **Preview** ke tabs, aur neeche **Word / PDF** ke button.
@@ -21,22 +22,21 @@ Setup ke poore steps (Firebase, payment, website online karna, admin banna): **[
 ## Files
 | File | Kaam |
 |---|---|
-| `index.html` | Login, payment screens, home aur form screen |
-| `admin.html`, `js/admin.js` | Admin panel: payments approve/reject, members, users |
-| `js/config.js` | **Aapki settings:** Firebase config, UPI ID, price |
-| `js/gate.js` | Login aur membership ki jaanch |
+| `index.html` | Login, approval ka intezaar, home aur form screen |
+| `admin.html`, `js/admin.js` | Admin panel: Requests / Approved / Removed |
+| `js/config.js` | **Aapki settings:** Firebase config, WhatsApp number |
+| `js/gate.js` | Login aur approval ki jaanch |
 | `js/engine.js` | Preview, PDF aur Word banane wala engine |
 | `js/app.js` | Forms ki list, fields, save, export |
 | `forms/nakal.js` | Form Nakal ka format, fields aur sample case |
 | `css/app.css` | Design |
 | `firestore.rules` | Database ki suraksha: kaun kya padh/likh sakta hai |
 | `firebase.json` | Firebase Hosting aur emulator settings |
+| `.github/workflows/deploy.yml` | Har update par app apne aap live karta hai |
 | `terms.html`, `privacy.html` | Terms aur Privacy Policy (**draft**, live se pehle poora karein) |
-| `lib/` | PDF, Word, Firebase aur QR ki libraries (offline ke liye andar) |
+| `lib/` | PDF, Word aur Firebase ki libraries (offline ke liye andar) |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Install aur offline ke liye |
-| `tests/` | Format test aur login/payment ka poora test |
+| `tests/` | Format test aur login/approval ka poora test |
 | `CLAUDE.md` | Claude Code ke liye poori jaankari |
-
-**Har update par** `sw.js` mein `VERSION` badlein (jaise `icf-v2` → `icf-v3`), warna logon ke phone mein purani app chalti rahegi.
 
 Export ki hui file court mein dene se pehle hamesha ek baar check karein.

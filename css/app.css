@@ -106,20 +106,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--focus); out
 .ticks li::before { content: "✓"; position: absolute; left: 2px; color: var(--accent); font-weight: 700; }
 .btn.google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; font-weight: 600; }
 .price { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 4px; padding: 14px 16px; border-radius: 12px; background: #f6e9e4; }
-.price strong { font: 700 30px/1 Georgia, "Times New Roman", serif; color: var(--accent); }
-.step { margin: 22px 0 10px; padding-top: 14px; }
-.paybtns { display: flex; gap: 8px; flex-wrap: wrap; }
-.paybtns .btn { flex: 1; text-align: center; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
-.qrwrap { margin: 12px 0; }
-.qrwrap summary { cursor: pointer; color: var(--accent); font-size: 13.5px; font-weight: 600; }
-.qr { width: 200px; max-width: 100%; margin: 10px auto 0; }
-.qr svg { width: 100%; height: auto; display: block; }
-.utrform .row { display: flex; gap: 8px; margin-top: 6px; }
-.utrform input { font: 18px/1.2 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em; }
-.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 14px 0 16px; font-size: 14px; }
-.kv dt { color: var(--muted); }
-.kv dd { margin: 0; font-weight: 600; word-break: break-all; }
-#gPending .btn { text-decoration: none; display: inline-flex; align-items: center; margin-bottom: 12px; }
+.price strong { font: 700 22px/1.2 Georgia, "Times New Roman", serif; color: var(--accent); }
+#gWait .btn { text-decoration: none; display: inline-flex; align-items: center; margin-bottom: 12px; }
 .acct { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; color: var(--muted); }
 .acct .linkbtn { margin-left: 6px; }
 code { font-size: .92em; background: #f0ebe2; padding: 1px 5px; border-radius: 4px; }
+#gWait .price { margin-bottom: 14px; }
