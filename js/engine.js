@@ -21,7 +21,7 @@
     const cells = [];
     const add = (c, r, cs, rs, paras, o = {}) => cells.push({
       c, r, cs, rs, paras, rot: !!o.rot, align: o.align || 'center', valign: o.valign || 'center',
-      border: o.border !== false, gap: o.gap || 0, img: o.img || null,
+      border: o.border !== false, gap: o.gap || 0,
     });
     return { cells, add };
   }
@@ -81,9 +81,7 @@
       c.paras.forEach((p, i) => wrap(p.text, p.size, p.bold, along).forEach((s, j) => lines.push({ ...p, text: s, extra: (i > 0 && j === 0) ? c.gap : 0 })));
       const across = lines.reduce((s, l) => s + l.size * LINE + l.extra, 0);
       const crossSize = c.rot ? w - 2 * PAD_H : h - 2 * PAD_V;
-      const img = c.img && c.img.r0 && c.img.w > 0 && c.img.h > 0 ? c.img : null;
-      // with a picture (signature / stamp) the text goes first and the picture fills the rest of the cell
-      let off = c.valign === 'top' || img ? (c.rot ? PAD_H : PAD_V) : (c.rot ? PAD_H : PAD_V) + Math.max(0, (crossSize - across) / 2);
+      let off = c.valign === 'top' ? (c.rot ? PAD_H : PAD_V) : (c.rot ? PAD_H : PAD_V) + Math.max(0, (crossSize - across) / 2);
       for (const l of lines) {
         off += l.extra;
         const lh = l.size * LINE;
@@ -102,19 +100,6 @@
         }
         off += lh;
       }
-      if (img) {
-        const gap = lines.length ? 3 : 0;
-        let bx, by, bw, bh;
-        if (!c.rot) { bx = x + PAD_H; by = y + off + gap; bw = w - 2 * PAD_H; bh = y + h - PAD_V - by; }
-        else { bx = x + off + gap; by = y + PAD_V + 2; bw = x + w - PAD_H - bx; bh = h - 2 * PAD_V - 4; }
-        if (bw > 4 && bh > 4) {
-          // rotated cell: the picture's width runs bottom-to-top, like the text
-          const iw = c.rot ? img.h : img.w, ih = c.rot ? img.w : img.h;
-          const sc = Math.min(bw / iw, bh / ih);
-          const dw = iw * sc, dh = ih * sc;
-          ops.push({ t: 'img', x: bx + (bw - dw) / 2, y: by + (bh - dh) / 2, w: dw, h: dh, rot: c.rot, img });
-        }
-      }
     }
     return ops;
   }
@@ -129,22 +114,10 @@
     for (const o of ops) {
       if (o.t === 'rect') s += `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="none" stroke="#000" stroke-width="0.5"/>`;
       else if (o.t === 'line') s += `<line x1="${o.x1}" y1="${o.y1}" x2="${o.x2}" y2="${o.y2}" stroke="#000" stroke-width="${o.wdt}"/>`;
-      else if (o.t === 'img') s += `<image href="${o.rot ? o.img.r90 : o.img.r0}" x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" preserveAspectRatio="none"/>`;
       else s += `<text x="${o.x}" y="${o.y}" font-size="${o.size}"${o.bold ? ' font-weight="bold"' : ''} xml:space="preserve"${o.angle ? ` transform="rotate(${-o.angle} ${o.x} ${o.y})"` : ''}>${esc(o.text)}</text>`;
     }
     return s + '</g></svg>';
   }
-
-  // ------------------------------------------------------------ pictures on the page
-  // Final turn of a picture on paper: rotated cell (+90) and landscape page (-90) → pick the pre-turned copy
-  const imgTurn = (o, land) => { const a = (o.rot ? 90 : 0) - (land ? 90 : 0); return a === 90 ? o.img.r90 : a === -90 ? o.img.rm90 : o.img.r0; };
-  // The picture's box after mapping its corners to page coordinates
-  const boxOn = (o, map) => {
-    const pts = [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]].map(p => map(p[0], p[1]));
-    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-    return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
-  };
-  const b64bytes = url => { const b = atob(url.split(',')[1]); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
 
   // ------------------------------------------------------------ PDF
   function pdf(form, ops, land) {
@@ -159,9 +132,6 @@
         for (let i = 0; i < 4; i++) { const a = pts[i], b = pts[(i + 1) % 4]; doc.line(a[0], a[1], b[0], b[1]); }
       } else if (o.t === 'line') {
         const a = tp(o.x1, o.y1), b = tp(o.x2, o.y2); doc.setLineWidth(o.wdt); doc.line(a[0], a[1], b[0], b[1]);
-      } else if (o.t === 'img') {
-        const r = boxOn(o, tp);
-        doc.addImage(imgTurn(o, land), 'PNG', r.x, r.y, r.w, r.h);
       } else {
         const [x, y] = tp(o.x, o.y);
         doc.setFont('times', o.bold ? 'bold' : 'normal'); doc.setFontSize(o.size);
@@ -233,7 +203,7 @@
           verticalMerge: it.rs > 1 ? (first ? D.VerticalMergeType.RESTART : D.VerticalMergeType.CONTINUE) : undefined,
           width: { size: width, type: D.WidthType.DXA },
           borders: ce.border ? B : NB, margins,
-          verticalAlign: ce.valign === 'top' || ce.img ? D.VerticalAlign.TOP : D.VerticalAlign.CENTER,
+          verticalAlign: ce.valign === 'top' ? D.VerticalAlign.TOP : D.VerticalAlign.CENTER,
           textDirection: it.dir === 'btlr' ? D.TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT : it.dir === 'tbrl' ? D.TextDirection.TOP_TO_BOTTOM_RIGHT_TO_LEFT : undefined,
         }));
         c += it.cs;
@@ -244,32 +214,14 @@
     const table = new D.Table({ width: { size: total, type: D.WidthType.DXA }, columnWidths: colW, rows });
     const tail = new D.Paragraph({ spacing: { before: 0, after: 0, line: 20, lineRule: 'exact' }, children: [new D.TextRun({ text: '', size: 2 })] });
 
-    // Pictures (signature / stamp) float on the page at the same place as in the PDF, measured from this table
-    const pics = layout(form, cells).filter(o => o.t === 'img');
-    const side = Math.floor((pageH - total) / 2);
-    const yb = pt(geom(form).rowY[g.rows.length]);
-    const toPage = land ? (x, y) => [pt(side) + (yb - y), pt(cfg.landMargin.top) + (x - pt(g.left))] : (x, y) => [x, y];
-    const picRuns = pics.map(o => {
-      const r = boxOn(o, toPage);
-      return new D.ImageRun({
-        type: 'png', data: b64bytes(imgTurn(o, land)),
-        transformation: { width: r.w * 96 / 72, height: r.h * 96 / 72 },
-        floating: {
-          horizontalPosition: { relative: D.HorizontalPositionRelativeFrom.PAGE, offset: Math.round(r.x * 12700) },
-          verticalPosition: { relative: D.VerticalPositionRelativeFrom.PAGE, offset: Math.round(r.y * 12700) },
-          wrap: { type: D.TextWrappingType.NONE }, allowOverlap: true, behindDocument: false,
-        },
-      });
-    });
-    const tailWithPics = picRuns.length ? new D.Paragraph({ spacing: { before: 0, after: 0, line: 20, lineRule: 'exact' }, children: [new D.TextRun({ text: '', size: 2 }), ...picRuns] }) : tail;
-
     let page, children;
     if (!land) {
       page = { size: { width: pageW, height: pageH }, margin: { ...cfg.portraitMargin, left: g.left, right: pageW - g.left - total } };
-      children = [new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: cfg.titleAfter }, children: [new D.TextRun({ text: form.title.text, font: FONT, size: form.title.size * 2, bold: true })] }), table, tailWithPics];
+      children = [new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: cfg.titleAfter }, children: [new D.TextRun({ text: form.title.text, font: FONT, size: form.title.size * 2, bold: true })] }), table, tail];
     } else {
+      const side = Math.floor((pageH - total) / 2);
       page = { size: { width: pageW, height: pageH, orientation: D.PageOrientation.LANDSCAPE }, margin: { ...cfg.landMargin, left: side, right: pageH - total - side } };
-      children = [table, tailWithPics];
+      children = [table, tail];
     }
     const doc = new D.Document({
       title: form.docTitle || form.name,

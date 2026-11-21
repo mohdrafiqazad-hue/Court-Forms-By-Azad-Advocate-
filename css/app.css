@@ -334,18 +334,6 @@ body.sheet-open { overflow: hidden; }
 
 /* ---------- client book, diary, signature ---------- */
 .tools-main { flex-wrap: wrap; }
-.nextrow { display: grid; gap: 8px; margin: 0 0 12px; padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
-.nr-date { display: grid; gap: 4px; }
-.nr-date > span { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--accent); }
-.nr-date b { margin-left: auto; color: #2b5d22; font-size: 12.5px; }
-.nr-acts { display: flex; flex-wrap: wrap; gap: 6px; }
-.nr-acts .btn { text-decoration: none; display: inline-flex; align-items: center; }
-.datebox { flex: none; width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; align-content: center; background: #f6e9e4; color: var(--accent); line-height: 1; }
-.datebox b { font: 700 18px/1 Georgia, serif; }
-.datebox small { font-size: 10.5px; margin-top: 2px; }
-.datebox.today { background: var(--accent); color: #fff; }
-.datebox.soon { background: #fbefd9; color: #8a5a10; }
-.datebox.past { background: #eee; color: #8a8178; }
 .sheet-h { margin: 16px 0 8px; padding-top: 0; border-top: 0; }
 .sheet-row.top { margin-top: 0; margin-bottom: 10px; align-items: center; }
 .sheet-row.top .sheet-search { flex: 1; min-width: 160px; margin: 0; }
@@ -353,14 +341,17 @@ body.sheet-open { overflow: hidden; }
 .caserow .use { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; padding-left: 50px; }
 .caserow .use > span { font-size: 12px; color: var(--muted); font-weight: 600; }
 .clientform { display: grid; gap: 0; }
-.signgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.signtile { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
-.signprev { height: 90px; margin: 6px 0; border-radius: 8px; background: repeating-conic-gradient(#f3efe8 0 25%, #fff 0 50%) 0 0 / 16px 16px; display: grid; place-items: center; overflow: hidden; }
-.signprev img { max-width: 100%; max-height: 86px; }
-.signtile .sheet-row { margin-top: 4px; }
 @media (max-width: 820px) {
   .tools-main { grid-template-columns: repeat(4, 1fr); }
   .tools-main .btn { font-size: 12.5px; }
-  .nr-date > span { font-size: 14.5px; }
-  .datebox b { font-size: 20px; }
 }
+
+/* client's cases */
+.ccases { display: grid; gap: 6px; width: 100%; padding-left: 50px; }
+.ccases.edit { padding-left: 0; margin-bottom: 6px; }
+.cc-h { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.ccase { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #f7f4ee; border: 1px solid #ebe3d6; border-radius: 10px; padding: 7px 8px 7px 12px; }
+.ccase > span:first-child { flex: 1 1 160px; min-width: 0; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.ccase .acts-in { display: flex; gap: 6px; }
+.ccases .linkbtn { justify-self: start; margin: 2px 0 0; font-size: 13.5px; }
+@media (max-width: 820px) { .ccases { padding-left: 0; } .ccase > span:first-child { font-size: 15px; } }

@@ -174,58 +174,47 @@ const pdfInfo = buf => {
   check(await page.evaluate(() => CF.store.clients.all().length) === 0, 'Delete removes the client');
   await page.click('[data-sheet-close]');
 
-  // Diary: next dates
-  console.log('Diary');
-  const isoIn = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-  check(await page.isHidden('#nextRow'), 'next date only for a saved case');
-  await page.click('#btnSample'); await yes(); await page.click('#btnSaveCase');
-  check(await page.isVisible('#nextRow'), 'saved case shows the next-date row');
-  await page.fill('#nextDate', isoIn(1)); await page.fill('#nextNote', 'Arguments'); await page.click('#btnSaveDate');
-  check((await page.textContent('#nextWhen')) === 'Tomorrow', 'next date saved and shown as “Tomorrow”');
-  const cal = await page.getAttribute('#calLink', 'href');
-  check(cal.startsWith('https://calendar.google.com/calendar/render?action=TEMPLATE') && cal.includes('&dates=' + isoIn(1).replace(/-/g, '')), 'Google Calendar link for that day');
-  await page.fill('#f_purpose', 'Changed purpose'); await page.click('#btnSaveCase');
-  check(await page.evaluate(() => CF.store.cases.all()[0].nextDate) === isoIn(1), 'saving the form again keeps the next date');
-  await page.goto(APP + '#/'); await page.waitForSelector('#formList .card');
-  check(await page.isVisible('#homeDates') && (await page.textContent('#dateList')).includes('Tomorrow · Arguments'), 'home shows the next dates');
-  await page.click('#btnDiary'); await page.waitForSelector('#sheet:not([hidden])');
-  check((await page.$$('#sheetBody .daterow')).length >= 1, 'Diary lists dated cases');
-  await page.click('#sheetBody .daterow'); await yes(); await page.waitForSelector('#formView:not([hidden])');
-  check((await val('purpose')) === 'Changed purpose', 'a case opens from the diary');
-  await page.click('#btnClearDate');
-  check(await page.evaluate(() => !CF.store.cases.all()[0].nextDate), 'Remove date clears it');
-
-  // Signature & stamp
-  console.log('Signature & stamp');
-  await page.click('#btnMine'); await page.click('[data-sign-add="sig"]');
-  await page.setInputFiles('#signFile', path.join(__dirname, 'fixtures', 'signature.jpg')); await page.waitForTimeout(600);
-  await page.click('[data-sign-add="stamp"]');
-  await page.setInputFiles('#signFile', path.join(__dirname, 'fixtures', 'stamp.jpg')); await page.waitForTimeout(600);
-  check((await page.$$('#sheetBody .signprev img')).length === 2, 'signature and stamp photos saved');
-  const transparent = await page.evaluate(async () => {
-    const s = CF.store.sign.get(); const im = new Image(); im.src = s.sig; await im.decode();
-    const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
-    return x.getImageData(0, 0, 1, 1).data[3] === 0 && im.width < 640;
-  });
-  check(transparent, 'white paper removed and the photo cropped to the ink');
+  // Client's cases → one tap fills the form
+  console.log("Client's cases");
+  await page.click('#btnClear'); await yes();
+  await page.click('#btnSample'); await yes();
+  await page.click('#btnClients'); await page.click('#btnNewClient');
+  await page.fill('#sheetBody [data-ck="name"]', 'Rinki'); await page.fill('#sheetBody [data-ck="father"]', 'Mohan Lal');
+  await page.click('#btnAddCase'); await page.click('#btnCaseFromForm');
+  check((await page.inputValue('#sheetBody [data-kk="nature"]')).includes('COMA/102/2022'), 'case editor takes the case particulars from the form');
+  await page.click('#btnCaseDone');
+  check((await page.$$('#sheetBody .ccases.edit .ccase')).length === 1, 'case added to the client');
+  await page.click('#btnAddCase');
+  await page.fill('#sheetBody [data-kk="nature"]', 'Civil Suit\nCase No. CS/77/2025'); await page.fill('#sheetBody [data-kk="plaintiff"]', 'Rinki');
+  await page.fill('#sheetBody [data-kk="defendant"]', 'Kamal Kumar'); await page.fill('#sheetBody [data-kk="court"]', 'Sh. Amit Sharma, Civil Judge (Jr. Div.), Jalandhar');
+  await page.fill('#sheetBody [data-kk="decision"]', 'Decided on 05.10.2026'); await page.click('#btnCaseDone');
+  await page.click('#btnSaveClient');
+  check(await page.evaluate(() => CF.store.clients.all()[0].cases.length) === 2, 'client saved with 2 cases');
   await page.click('[data-sheet-close]');
-  await page.selectOption('#f_useSign', 'yes'); await page.waitForTimeout(300);
-  check(await page.$('#paper svg image') !== null, 'preview shows the signature in the Seal box');
-  for (const o of ['landscape', 'portrait']) {
-    await page.click(`#orientSeg [data-o="${o}"]`); await page.waitForTimeout(150);
-    const [dp] = await Promise.all([page.waitForEvent('download'), page.click('#btnPdf')]);
-    const pb = fs.readFileSync(await dp.path());
-    check(pdfInfo(pb).pages === 1 && /\/Subtype\s*\/Image/.test(pb.toString('latin1')), o + ' PDF has the signature, still 1 page');
-    const [dw] = await Promise.all([page.waitForEvent('download'), page.click('#btnWord')]);
-    const wf = path.join(OUT, 'signed-' + o + '.docx'); await dw.saveAs(wf);
-    check(fs.readFileSync(wf).toString('latin1').includes('word/media/'), o + ' Word has the signature');
-    if (o === 'landscape') fs.copyFileSync(await dp.path(), path.join(OUT, 'signed-landscape.pdf')); else fs.copyFileSync(await dp.path(), path.join(OUT, 'signed-portrait.pdf'));
-  }
-  await page.selectOption('#f_useSign', ''); await page.waitForTimeout(150);
-  check(await page.$('#paper svg image') === null, 'choosing “No” takes the signature off');
-  const bk2 = await page.evaluate(() => CF.store.backup.make());
-  check(!!(bk2.sign && bk2.sign.combo) && Array.isArray(bk2.clients), 'backup also keeps clients and the signature');
-  await page.click(`#orientSeg [data-o="landscape"]`);
+  await page.click('#btnClear'); await yes();
+  await page.click('#btnClients');
+  check((await page.$$('#clientList [data-case-fill]')).length === 2, 'client book shows the client’s cases with “Fill this case”');
+  await page.click('#clientList [data-case-fill] >> nth=0');
+  check((await val('nature')).includes('COMA/102/2022') && (await val('plaintiff')) === 'Rinki' && (await val('defendant')) === 'Surinder Singh'
+    && (await val('court')).startsWith('Sh. Parteek Gupta') && (await val('decision')).startsWith('Pending'), 'one tap fills every case particular');
+  await page.click('#btnClients'); await page.click('#clientList [data-case-fill] >> nth=1');
+  check((await val('nature')).includes('CS/77/2025') && (await val('defendant')) === 'Kamal Kumar' && (await val('claim')) === '' && (await val('decision')) === 'Decided on 05.10.2026',
+    'filling another case replaces the old particulars (empty ones cleared)');
+  await page.fill('#f_nature', 'Criminal\nCase No. CRM/9/2026'); await page.fill('#f_defendant', 'State of Punjab');
+  await page.click('#btnClients'); await page.click('#clientList [data-case-save]');
+  check(await page.evaluate(() => CF.store.clients.all()[0].cases.length) === 3, '“Save this form’s case here” adds the form’s case');
+  await page.fill('#clientSearch', 'CRM/9/2026'); await page.waitForTimeout(80);
+  check((await page.$$('#clientList .caserow')).length === 1, 'search finds a client by case number');
+  await page.fill('#clientSearch', '');
+  await page.click('#clientList [data-client-edit]'); await page.click('#sheetBody [data-ce-edit="2"]');
+  await page.fill('#sheetBody [data-kk="place"]', 'Jalandhar'); await page.click('#btnCaseDone');
+  await page.click('#sheetBody [data-ce-del="1"]'); await yes();
+  await page.click('#btnSaveClient');
+  const cc = await page.evaluate(() => CF.store.clients.all()[0].cases);
+  check(cc.length === 2 && cc[1].place === 'Jalandhar', 'cases can be edited and deleted');
+  check(await page.evaluate(() => CF.store.backup.make().clients[0].cases.length) === 2, 'backup keeps the client’s cases');
+  check(await page.evaluate(() => !('sign' in CF.store) && !CF.store.cases.dated) && await page.$('#nextRow') === null && await page.$('#homeDates') === null, 'next date and signature features are gone');
+  await page.click('[data-sheet-close]');
 
   // phone layout
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
