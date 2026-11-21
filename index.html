@@ -71,6 +71,21 @@
   <p class="foot">Always check the exported form before filing. · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a></p>
 </section>
 
+<!-- Team screen (owner only): approve or remove people -->
+<section id="teamView" class="home" hidden>
+  <header class="team-head">
+    <a href="#/" class="back" aria-label="All forms">&#8592;</a>
+    <div><h1>Team</h1><p class="muted small">Approve who can use i Court Forms</p></div>
+  </header>
+  <nav class="atabs" id="teamTabs">
+    <button type="button" data-t="requests">Requests <span id="reqCount" class="badge">0</span></button>
+    <button type="button" data-t="approved">Approved <span id="appCount" class="badge muted-badge">0</span></button>
+    <button type="button" data-t="removed">Removed</button>
+  </nav>
+  <p id="teamHint" class="small muted"></p>
+  <div id="teamList"></div>
+</section>
+
 <!-- Form screen -->
 <section id="formView" class="fv" data-tab="fill" hidden>
   <header class="fv-head">
@@ -115,6 +130,7 @@
 <script src="js/config.js"></script>
 <script src="js/engine.js"></script>
 <script src="forms/nakal.js"></script>
+<script src="js/team.js"></script>
 <script src="js/gate.js"></script>
 <script src="js/app.js"></script>
 <script>

@@ -6,17 +6,17 @@ Owner: Mohammad Rafiq Azad, Advocate, Jalandhar.
 
 Forms so far: **Form Nakal** (Form for Copies — application for certified / uncertified copies).
 
-Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Firebase Auth) → the user is listed under Requests in `admin.html` and sees "Waiting for approval" → the owner approves → app unlocks live; Remove locks it again. No payment inside the app. The owner's account always gets in. Owner setup steps are in `SETUP.md` (Hinglish).
+Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Firebase Auth) → the user is listed under Team → Requests (in the app, owner only) and sees "Waiting for approval" → the owner approves → app unlocks live; Remove locks it again. No payment inside the app. The owner's account always gets in. Owner setup steps are in `SETUP.md` (Hinglish).
 
 ## Files
-- `index.html` — gate screens (`#gate`: loading, setup, login, wait, offline), home (form list), form screen.
+- `index.html` — gate screens (`#gate`: loading, setup, login, wait, offline), home (form list), Team screen, form screen.
 - `css/app.css` — styles. Mobile-first: under 820px the form screen has Fill / Preview tabs and a fixed bottom bar with the export buttons.
 - `js/config.js` — owner settings: Firebase web config, support WhatsApp. Not secret.
 - `js/gate.js` — sign-in + approval gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Writes `users/{uid}` at sign-in (that is the request), listens live to `members/{uid}`. Caches an approval in localStorage (`icf-member-v1`, at most 30 days) so the app opens offline. Admins (detected by listing `users`, which the rules only allow for admins) always get in.
 - `js/engine.js` — rendering engine shared by all forms (`CF.engine`: `layout`, `svg`, `pdf`, `docx`) and helpers (`CF.util`: `P`, `linesOf`, `clean`, `cellList`).
 - `js/app.js` — app shell: hash routing (`#/` home, `#/f/<id>` a form), field rendering, autosave, export, Web Share.
 - `forms/<id>.js` — one file per form. Each calls `CF.register({...})`.
-- `admin.html`, `js/admin.js` — admin panel: Requests / Approved / Removed (live). Approve sets `members/{uid}.validUntil` to 2099-12-31; Remove sets it to now with `blocked: true`.
+- `js/team.js` — Team screen inside the app at `#/team` (owner/admins only; gate.js starts it): Requests / Approved / Removed (live). Approve sets `members/{uid}.validUntil` to 2099-12-31; Remove sets it to now with `blocked: true`. `admin.html` only redirects to `./#/team`.
 - `firestore.rules` — security. The owner account (email hard-coded in `isOwner()`) is always admin; `admins/{uid}` adds extra admins by hand in console. `users/{uid}` (profile written at sign-in = request), `members/{uid}` (`validUntil`, `blocked`; admin-only writes).
 - `firebase.json`, `firestore.indexes.json` — Firebase Hosting (serves the repo root, ignores docs/tests) and emulator ports.
 - `terms.html`, `privacy.html` — drafts with [placeholders]; the owner must complete them.

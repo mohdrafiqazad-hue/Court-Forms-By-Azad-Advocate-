@@ -6,9 +6,9 @@ Abhi ka form: **Form Nakal** (Form for Copies), District Courts Jalandhar. Aage 
 
 ## App kaise khulti hai
 1. **Google se login**
-2. User ko **"Waiting for approval"** dikhta hai, aur woh aapke **Admin panel → Requests** mein aa jata hai
+2. User ko **"Waiting for approval"** dikhta hai, aur woh aapki app mein **Team → Requests** mein aa jata hai
 3. Aap **Approve** karte hain, aur uski app apne aap khul jaati hai. **Remove** karne par band ho jaati hai.
-4. Malik (`mohdrafiqazad@gmail.com`) ke liye app hamesha khuli hai, aur Admin panel bhi: `https://i-court-forms.web.app/admin.html`
+4. Malik (`mohdrafiqazad@gmail.com`) ke liye app hamesha khuli hai. Home par **"Owner · Team"** dabakar approve/remove karte hain (Madhur Ganga jaisa, app ke andar hi).
 5. Approval phone mein yaad rehti hai, toh app offline bhi khulti hai (har 30 din mein ek baar online check)
 
 Live: **https://i-court-forms.web.app** · Setup ki poori jaankari: **[SETUP.md](SETUP.md)**
@@ -23,7 +23,7 @@ Live: **https://i-court-forms.web.app** · Setup ki poori jaankari: **[SETUP.md]
 | File | Kaam |
 |---|---|
 | `index.html` | Login, approval ka intezaar, home aur form screen |
-| `admin.html`, `js/admin.js` | Admin panel: Requests / Approved / Removed |
+| `js/team.js` | Team screen (sirf malik): Requests / Approved / Removed |
 | `js/config.js` | **Aapki settings:** Firebase config, WhatsApp number |
 | `js/gate.js` | Login aur approval ki jaanch |
 | `js/engine.js` | Preview, PDF aur Word banane wala engine |

@@ -66,18 +66,18 @@ Ab repo chahein toh wapas **private** kar sakte hain. Firebase Hosting ke liye p
 ## Step 7: Admin (malik)
 Kuch karne ki zaroorat nahi. **`mohdrafiqazad@gmail.com` hamesha admin hai** (ye `firestore.rules` mein likha hai). Is account se:
 - app **bina approval** ke khulti hai, aur home par "Owner · Admin panel" dikhta hai;
-- `https://i-court-forms.web.app/admin.html` seedha khulta hai.
+- home par **"Owner · Team"** dikhta hai; Team screen app ke andar hi hai.
 
-Koi aur admin jodna ho: admin page par us account ka UID dikhega → Firestore → collection `admins` → Document ID = woh UID → field `name` → Save.
+Koi aur admin jodna ho: us account ka UID Firebase console → Authentication → Users mein dikhega → Firestore → collection `admins` → Document ID = woh UID → field `name` → Save.
 
 ## Roz ka kaam (approve karna)
-1. `https://i-court-forms.web.app/admin.html` kholein → **Requests** tab.
+1. App kholein → home par **Owner · Team** → **Requests** tab.
 2. Jisko app deni hai uske saamne **Approve** dabayein. Uski app turant khul jayegi.
 3. Kisi ki app band karni ho: **Approved** tab → **Remove**. Dobara deni ho: **Removed** tab → **Approve**.
 
 ## Test kaise karein
 1. Kisi doosre Google account se `https://i-court-forms.web.app` kholein → login → "Waiting for approval" dikhega.
-2. Apne account se admin page → Requests → Approve → doosre account ki app khul jaani chahiye.
+2. Apne account se app → Team → Requests → Approve → doosre account ki app khul jaani chahiye.
 
 ## Free plan ki seemayein (lagbhag)
 | Cheez | Free seema | Aapke liye matlab |

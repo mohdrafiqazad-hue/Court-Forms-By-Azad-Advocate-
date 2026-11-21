@@ -61,31 +61,29 @@ const tryWrite = (page, fn) => page.evaluate(`(async () => { try { await (${fn})
   await signIn(u2.page, 'u2', 'junior.two@example.com', 'Second Junior');
   check(await visible(u2.page, '#gWait'), 'user 2 also waiting');
 
-  console.log('Other account on the admin page');
-  const x = await open(browser, BASE + 'admin.html?emulator');
-  await visible(x.page, '#aLogin');
-  await signIn(x.page, 'x1', 'not.owner@example.com', 'Not Owner');
-  check(await visible(x.page, '#aNot'), 'non-owner is refused on the admin page');
-
   console.log('Owner');
-  const ow = await open(browser, BASE + '?emulator');
-  await visible(ow.page, '#gLogin');
-  await signIn(ow.page, 'own', OWNER, 'Owner');
-  check(await visible(ow.page, '#home'), 'owner: app opens with no approval');
-  check((await ow.page.textContent('#acct')).includes('Owner'), 'owner: "Owner · Admin panel" link');
-  const ad = await open(browser, BASE + 'admin.html?emulator');
-  await visible(ad.page, '#aLogin');
+  const ad = await open(browser, BASE + '?emulator');
+  await visible(ad.page, '#gLogin');
   await signIn(ad.page, 'own', OWNER, 'Owner');
-  check(await visible(ad.page, '#aMain'), 'owner: admin panel opens with no setup');
+  check(await visible(ad.page, '#home'), 'owner: app opens with no approval');
+  check((await ad.page.textContent('#acct')).includes('Team'), 'owner: "Owner · Team" link on home');
+  await ad.page.waitForFunction(() => { const b = document.querySelector('#acct [data-team-count]'); return b && !b.hidden && b.textContent === '2'; }, null, { timeout: 8000 }).catch(() => {});
+  check(await ad.page.evaluate(() => { const b = document.querySelector('#acct [data-team-count]'); return b && !b.hidden && b.textContent; }) === '2', 'owner: Team badge shows 2 waiting');
+  await ad.page.click('#acct a.teamlink');
+  check(await visible(ad.page, '#teamView'), 'owner: Team screen opens inside the app');
   await ad.page.waitForFunction(() => document.querySelector('#reqCount').textContent === '2', null, { timeout: 8000 }).catch(() => {});
-  check((await ad.page.textContent('#reqCount')) === '2', 'owner sees the 2 app sign-ins as requests (not self, not admin-page visitors)');
-  await ad.page.screenshot({ path: path.join(OUT, 'admin-1-requests.png'), fullPage: true });
+  check((await ad.page.textContent('#reqCount')) === '2', 'owner sees the 2 sign-ins under Requests (not themself)');
+  await ad.page.screenshot({ path: path.join(OUT, 'team-1-requests.png'), fullPage: true });
 
   await ad.page.click(`[data-approve="${uid1}"]`);
   check(await visible(u1.page, '#home', 10000), 'user 1 app opens by itself after Approve');
   check((await u1.page.textContent('#acct')).includes('Approved'), 'user 1 sees "Approved"');
   await u1.page.screenshot({ path: path.join(OUT, 'gate-3-approved.png') });
   check((await ad.page.textContent('#reqCount')) === '1' && (await ad.page.textContent('#appCount')) === '1', 'counts update: 1 request, 1 approved');
+
+  await u1.page.goto(BASE + '?emulator#/team'); await u1.page.waitForTimeout(1500);
+  check(await u1.page.isHidden('#teamView'), 'approved (non-owner) user cannot open the Team screen');
+  await u1.page.goto(BASE + '?emulator#/');
 
   console.log('User 1 offline');
   await u1.page.click('#formList .card'); check(await visible(u1.page, '#formView'), 'approved user can open a form');
@@ -94,11 +92,12 @@ const tryWrite = (page, fn) => page.evaluate(`(async () => { try { await (${fn})
   await u1.ctx.setOffline(false);
 
   console.log('Remove and approve again');
-  await ad.page.click('[data-t="approved"]');
+  await ad.page.click('#teamTabs [data-t="approved"]');
   await ad.page.click(`[data-remove="${uid1}"]`);
+  await ad.page.click('#confirm [data-yes]');
   await u1.page.reload();
   check(await visible(u1.page, '#gWait', 10000) && (await u1.page.textContent('#waitTitle')).includes('removed'), 'removed user is locked out and told');
-  await ad.page.click('[data-t="removed"]');
+  await ad.page.click('#teamTabs [data-t="removed"]');
   await ad.page.click(`[data-approve="${uid1}"]`);
   check(await visible(u1.page, '#formView', 10000), 'approve again → app opens again (back on the form they had open)');
 

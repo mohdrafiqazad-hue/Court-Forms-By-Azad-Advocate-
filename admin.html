@@ -4,71 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#7a2e1f">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/app.css">
-<title>Admin — i Court Forms</title>
-<style>
-  .adm { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
-  .adm-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-  .adm-head h1 { font: 700 22px/1.2 Georgia, "Times New Roman", serif; color: var(--accent); margin: 0; flex: 1; }
-  .atabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
-  .atabs button { border: 0; background: none; padding: 9px 12px; font: 600 14px system-ui, sans-serif; color: var(--muted); border-bottom: 2.5px solid transparent; cursor: pointer; }
-  .atabs button[aria-pressed="true"] { color: var(--accent); border-bottom-color: var(--accent); }
-  .badge.muted-badge { background: #b9b0a2; }
-  .badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 12px; text-align: center; margin-left: 4px; }
-  .item { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
-  .item .who { flex: 1 1 240px; min-width: 0; }
-  .item .who strong { display: block; }
-  .item .who span { color: var(--muted); font-size: 13px; word-break: break-all; }
-  .item .meta { font-size: 13.5px; }
-  .item .meta b { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .03em; }
-  .item .acts { display: flex; gap: 6px; flex-wrap: wrap; }
-  .st { font-size: 12px; border-radius: 99px; padding: 2px 9px; background: #eee; }
-  .st.waiting { background: #fbf1e3; color: #8a5a10; } .st.approved { background: #e3f3e6; color: #1d6b2f; } .st.removed { background: #f8e3e0; color: #a3261a; }
-  .empty { color: var(--muted); padding: 18px 0; }
-  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
-  .uid { font-family: ui-monospace, Menlo, Consolas, monospace; background: #f0ebe2; padding: 6px 8px; border-radius: 6px; word-break: break-all; display: block; margin: 8px 0; }
-</style>
+<meta http-equiv="refresh" content="0; url=./#/team">
+<title>Team — i Court Forms</title>
 </head>
 <body>
-<div class="adm">
-  <div class="adm-head">
-    <h1>i Court Forms · Admin</h1>
-    <span id="who" class="small muted"></span>
-    <button type="button" class="btn sm" id="btnOut" hidden>Sign out</button>
-  </div>
-
-  <div id="aSetup" class="box" hidden>Firebase is not configured yet — fill <code>js/config.js</code> (see SETUP.md).</div>
-  <div id="aLogin" class="box" hidden>
-    <p>Sign in with the owner's Google account.</p>
-    <button type="button" class="btn primary" id="btnIn">Sign in with Google</button>
-    <p id="aMsg" class="err"></p>
-  </div>
-  <div id="aNot" class="box" hidden>
-    <p><strong>This account is not an admin.</strong></p>
-    <p class="small">Only the owner's Google account can open the admin panel. Sign out and sign in with the owner account.</p>
-    <p class="small muted">To add another admin: Firebase console → Firestore Database → <em>Start collection</em> <code>admins</code> → Document ID = the UID below → add any field (e.g. <code>name</code>) → Save.</p>
-    <span class="uid" id="myUid"></span>
-    <button type="button" class="btn sm" id="btnCopyUid">Copy UID</button>
-  </div>
-
-  <div id="aMain" hidden>
-    <nav class="atabs">
-      <button type="button" data-t="requests">Requests <span id="reqCount" class="badge">0</span></button>
-      <button type="button" data-t="approved">Approved <span id="appCount" class="badge muted-badge">0</span></button>
-      <button type="button" data-t="removed">Removed</button>
-    </nav>
-    <p id="hint" class="small muted"></p>
-    <div id="list"></div>
-  </div>
-</div>
-<div id="toast" role="status" aria-live="polite"></div>
-
-<script src="lib/firebase-app-compat.js"></script>
-<script src="lib/firebase-auth-compat.js"></script>
-<script src="lib/firebase-firestore-compat.js"></script>
-<script src="js/config.js"></script>
-<script src="js/admin.js"></script>
+<p>The admin panel is now inside the app: <a href="./#/team">open Team</a>.</p>
+<script>location.replace('./' + location.search + '#/team');</script>
 </body>
 </html>

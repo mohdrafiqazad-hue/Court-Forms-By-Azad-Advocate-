@@ -167,6 +167,10 @@
 
   function route() {
     if (CF.locked) return; // the sign-in / approval gate is showing
+    if (/^#\/team\b/.test(location.hash) && CF.team && CF.team.allowed()) {
+      form = null; $('#home').hidden = true; $('#formView').hidden = true; CF.team.show(); return;
+    }
+    if (CF.team) CF.team.hide();
     const m = location.hash.match(/^#\/f\/([\w-]+)/);
     const f = m && CF.forms.find(x => x.id === m[1]);
     if (f) { if (f !== form) openForm(f); } else showHome();
@@ -175,7 +179,9 @@
   // The gate (js/gate.js) calls showApp() once the user is signed in with an active membership.
   let started = false;
   CF.showApp = () => { if (!started) { started = true; init(); } else { form = null; route(); } };
-  CF.hideApp = () => { form = null; $('#home').hidden = true; $('#formView').hidden = true; };
+  CF.hideApp = () => { form = null; $('#home').hidden = true; $('#formView').hidden = true; if (CF.team) CF.team.hide(); };
+  CF.toast = toast; CF.confirmBox = confirmBox;
+  CF.route = () => route();
   const boot = () => { if (!CF.gated) CF.showApp(); };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
 })();

@@ -1,5 +1,5 @@
 /* i Court Forms — sign-in and approval gate.
-   Flow: Google sign-in → the user appears in the owner's Requests list (admin.html) and sees
+   Flow: Google sign-in → the user appears in the owner's Team → Requests list (in the app) and sees
    "waiting for approval" → the owner approves → the app opens by itself (live listener).
    The owner removes someone the same way. The owner's own account always gets in.
    An approval is cached on the device (re-checked online at least every 30 days) so the app
@@ -45,9 +45,10 @@
   function renderAcct(m) {
     const el = $('#acct'); if (!el) return;
     el.hidden = false;
-    const status = m.admin ? 'Owner · <a href="admin.html">Admin panel</a>' : 'Approved';
+    const status = m.admin ? 'Owner · <a href="#/team" class="teamlink">Team</a> <span class="badge" data-team-count hidden>0</span>' : 'Approved';
     el.innerHTML = `<span>${esc(m.name || m.email)}</span><span class="dot">·</span><span>${status}</span><button type="button" class="linkbtn" id="btnSignOut2">Sign out</button>`;
     $('#btnSignOut2').onclick = signOut;
+    if (m.admin && CF.team) CF.team.refreshBadge();
   }
 
   // ------------------------------------------------------------ start
@@ -100,6 +101,8 @@
   }
   async function signOut() {
     writeCache(null); stopWatch();
+    if (CF.team) CF.team.stop();
+    if (/^#\/team\b/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     try { await CF.fb.auth.signOut(); } catch (e) { /* ignore */ }
     show('gLogin');
   }
@@ -122,11 +125,15 @@
       if (member === undefined || admin === undefined) return;
       clearTimeout(offlineTimer);
       const cacheUntil = Date.now() + OFFLINE_DAYS * 86400000;
-      if (admin) { // the owner (or an extra admin) always gets in
+      if (admin) { // the owner (or an extra admin) always gets in, and manages the Team
         const m = { ...me, validUntil: cacheUntil, admin: true };
-        writeCache(m); unlock(m);
+        writeCache(m);
+        if (CF.team) CF.team.start(db, me);
+        unlock(m);
+        if (CF.route && /^#\/team\b/.test(location.hash)) CF.route();
         return;
       }
+      if (CF.team) CF.team.stop();
       const until = member && member.validUntil ? member.validUntil.toMillis() : 0;
       if (until > Date.now()) {
         const m = { ...me, validUntil: Math.min(until, cacheUntil) };
