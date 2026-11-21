@@ -8,6 +8,9 @@
   // Forms the owner plans to add (names only — formats come from the printed forms).
   const PLANNED = ['Vakalatnama', 'Memo of Appearance', 'Exemption Application', 'Adjournment Application', 'Personal Bond', 'Surety Bond'];
 
+  const ICON_DOC = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M6 2.8h8.2L19 7.6v13.6H6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M14 2.8v5h5M9 12h7M9 15.5h7M9 19h4"/></svg>';
+  const ICON_CHEV = '<svg class="chev" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>';
+
   let form = null, data = {}, orient = 'portrait';
   const storeKey = f => 'cf-form-' + f.id + '-v1';
   const land = () => orient === 'landscape';
@@ -27,9 +30,9 @@
     $('#formView').hidden = true; $('#home').hidden = false;
     document.title = 'i Court Forms';
     $('#formList').innerHTML = CF.forms.map(f =>
-      `<a class="card" href="#/f/${f.id}"><strong>${escH(f.name)}</strong><span>${escH(f.desc)}</span><em>${escH(f.court)}</em></a>`).join('');
+      `<a class="card" href="#/f/${f.id}"><span class="ic">${ICON_DOC}</span><span class="card-body"><strong>${escH(f.name)}</strong><span>${escH(f.desc)}</span><em>${escH(f.court)}</em></span>${ICON_CHEV}</a>`).join('');
     const have = new Set(CF.forms.map(f => f.name.toLowerCase()));
-    $('#planned').innerHTML = PLANNED.filter(n => !have.has(n.toLowerCase())).map(n => `<li>${escH(n)}</li>`).join('');
+    $('#planned').innerHTML = PLANNED.filter(n => !have.has(n.toLowerCase())).map(n => `<li>${ICON_DOC}<span>${escH(n)}</span><em>Soon</em></li>`).join('');
     window.scrollTo(0, 0);
   }
 

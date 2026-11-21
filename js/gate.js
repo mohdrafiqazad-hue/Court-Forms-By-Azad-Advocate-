@@ -45,9 +45,13 @@
   function renderAcct(m) {
     const el = $('#acct'); if (!el) return;
     el.hidden = false;
-    const status = m.admin ? 'Owner · <a href="#/team" class="teamlink">Team</a> <span class="badge" data-team-count hidden>0</span>' : 'Approved';
-    el.innerHTML = `<span>${esc(m.name || m.email)}</span><span class="dot">·</span><span>${status}</span><button type="button" class="linkbtn" id="btnSignOut2">Sign out</button>`;
+    const first = String(m.name || m.email || '').split(/[\s@]/)[0];
+    const face = m.photo ? `<img src="${esc(m.photo)}" alt="" referrerpolicy="no-referrer">` : esc(first.charAt(0).toUpperCase());
+    const role = m.admin ? 'Owner · <a href="#/team" class="teamlink">Team</a> <span class="badge" data-team-count hidden>0</span>' : 'Approved';
+    el.innerHTML = `<span class="avatar">${face}</span><span class="who"><b>${esc(m.name || m.email)}</b><small>${role}</small></span><button type="button" class="out" id="btnSignOut2">Sign out</button>`;
     $('#btnSignOut2').onclick = signOut;
+    if ($('#hello')) $('#hello').textContent = first ? 'Namaste, ' + first : 'Welcome';
+    if ($('#teamCard')) $('#teamCard').hidden = !m.admin;
     if (m.admin && CF.team) CF.team.refreshBadge();
   }
 
@@ -113,12 +117,12 @@
 
   function watch(user) {
     const { db } = CF.fb;
-    const me = { uid: user.uid, email: user.email || '', name: user.displayName || '' };
+    const me = { uid: user.uid, email: user.email || '', name: user.displayName || '', photo: user.photoURL || '' };
     let member, admin; // undefined until first answer
 
     // Signing in is the request: the owner sees this profile in the Requests list.
     db.collection('users').doc(user.uid).set({
-      email: me.email, name: me.name, photo: user.photoURL || '', lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+      email: me.email, name: me.name, photo: me.photo, lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
     }, { merge: true }).catch(e => console.warn('profile', e.code));
 
     const decide = () => {
