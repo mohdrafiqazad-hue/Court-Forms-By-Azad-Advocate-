@@ -11,7 +11,6 @@
     { key: 'copyType', label: 'Ordinary / Urgent', type: 'choice', options: [['', 'Leave both'], ['ordinary', 'Ordinary'], ['urgent', 'Urgent']], hint: 'The other one is struck out on the form' },
     { key: 'courtFee', label: 'Court Fee', type: 'text' },
     { key: 'delivery', label: 'In Person / By Registered Post', type: 'choice', options: [['', 'Leave both'], ['person', 'In Person'], ['registry', 'By Registered Post']], hint: 'The other one is struck out on the form' },
-    { key: 'reqNo', label: 'No. (after “No.: 9”)', type: 'text' },
     { key: 'reqDate', label: 'Date', type: 'text', placeholder: 'DD.MM.YYYY', today: true },
 
     { group: 'Case particulars' },
@@ -59,7 +58,6 @@
       'In Person / By Registered Post': 'खुद / रजिस्टर्ड डाक से',
       'In Person': 'खुद (In Person)',
       'By Registered Post': 'रजिस्टर्ड डाक से (By Registered Post)',
-      'No. (after “No.: 9”)': 'नंबर (“No.: 9” के बाद)',
       'Date': 'तारीख़',
       'Nature of Case: Civil, Revenue, Criminal, Misc. or Appeal': 'केस की किस्म: दीवानी, माल, फ़ौजदारी, विविध या अपील',
       'Plaintiff or Complainant': 'वादी या शिकायतकर्ता',
@@ -97,7 +95,6 @@
       'In Person / By Registered Post': 'ਖ਼ੁਦ / ਰਜਿਸਟਰਡ ਡਾਕ ਰਾਹੀਂ',
       'In Person': 'ਖ਼ੁਦ (In Person)',
       'By Registered Post': 'ਰਜਿਸਟਰਡ ਡਾਕ ਰਾਹੀਂ (By Registered Post)',
-      'No. (after “No.: 9”)': 'ਨੰਬਰ (“No.: 9” ਤੋਂ ਬਾਅਦ)',
       'Date': 'ਤਾਰੀਖ਼',
       'Nature of Case: Civil, Revenue, Criminal, Misc. or Appeal': 'ਕੇਸ ਦੀ ਕਿਸਮ: ਦੀਵਾਨੀ, ਮਾਲ, ਫ਼ੌਜਦਾਰੀ, ਫੁਟਕਲ ਜਾਂ ਅਪੀਲ',
       'Plaintiff or Complainant': 'ਮੁੱਦਈ ਜਾਂ ਸ਼ਿਕਾਇਤਕਰਤਾ',
@@ -130,7 +127,7 @@
     add(4, 0, 3, 1, [P(d.courtFee || '', BIG, { bold: !d.courtFee }), P('Court Fee', BIG, { bold: true })]);
     add(7, 0, 3, 1, [P('In Person', BIG, { bold: true, strike: d.delivery === 'registry' }), P('By Registered Post', BIG, { bold: true, strike: d.delivery === 'person' })]);
     // r1 — request line
-    const no = (d.reqNo || '').trim() ? clean(d.reqNo).trim() : '......................................';
+    const no = '......................................'; // left blank on the printed form, filled by hand
     const dt = (d.reqDate || '').trim() ? clean(d.reqDate).trim() : '....................';
     add(0, 1, 10, 1, [
       P('Sir, the applicant requests that copy be supplied as per the particulars given in the table below, in accordance with the Rules.', DATA),
