@@ -67,14 +67,12 @@ Ab repo chahein toh wapas **private** kar sakte hain. Firebase Hosting ke liye p
 
 (Computer se bhi ho sakta hai: Node.js install karke `npm install -g firebase-tools`, `firebase login`, repo folder mein `firebase deploy`.)
 
-## Step 7: Khud ko Admin banayein
-1. `https://i-court-forms.web.app/admin.html` kholein → apne Google account se sign in karein.
-2. Page kahega "This account is not an admin" aur aapka **UID** dikhayega → **Copy UID**.
-3. Firebase console → **Firestore Database → Data → + Start collection**:
-   - Collection ID: `admins`
-   - Document ID: copy kiya hua **UID** paste karein
-   - Field: `name`, type string, value: `Owner` → **Save**
-4. Admin page reload karein. Ab Pending / Members / Users dikhenge.
+## Step 7: Admin (malik)
+Kuch karne ki zaroorat nahi. **`mohdrafiqazad@gmail.com` hamesha admin hai** (ye `firestore.rules` mein likha hai). Is account se:
+- app **bina payment** ke khulti hai, aur home par "Owner · Admin panel" dikhta hai;
+- `https://i-court-forms.web.app/admin.html` seedha khulta hai.
+
+Koi aur admin jodna ho: admin page par us account ka UID dikhega → Firestore → collection `admins` → Document ID = woh UID → field `name` → Save.
 
 ## Roz ka kaam (payment approve karna)
 1. Admin page → **Pending** tab.

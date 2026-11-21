@@ -41,8 +41,11 @@
     me = user;
     $('#btnOut').hidden = !user; $('#who').textContent = user ? user.email : '';
     if (!user) { only('aLogin'); return; }
+    // Admin = the owner's Google account (or an extra admin in admins/). The database rules decide:
+    // only an admin may list everyone's pending payments.
     let admin = false;
-    try { admin = (await db.collection('admins').doc(user.uid).get()).exists; } catch (e) { console.warn(e); }
+    try { await db.collection('payments').where('status', '==', 'pending').limit(1).get(); admin = true; }
+    catch (e) { if (e.code !== 'permission-denied') console.warn(e); }
     if (!admin) { $('#myUid').textContent = user.uid; only('aNot'); return; }
     only('aMain');
     unsubPending = db.collection('payments').where('status', '==', 'pending').onSnapshot(qs => {

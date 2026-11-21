@@ -12,12 +12,12 @@ Access: Google sign-in (Firebase Auth) → ₹100 / 365-day membership paid by U
 - `index.html` — gate screens (`#gate`: loading, setup, login, pay, pending, offline), home (form list), form screen.
 - `css/app.css` — styles. Mobile-first: under 820px the form screen has Fill / Preview tabs and a fixed bottom bar with the export buttons.
 - `js/config.js` — owner settings: Firebase web config, UPI ID, amount, days, support WhatsApp. Not secret.
-- `js/gate.js` — sign-in + membership gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Caches an active membership in localStorage (`icf-member-v1`) so the app opens offline. Listens live to `members/{uid}` and the user's `payments`.
+- `js/gate.js` — sign-in + membership gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Caches an active membership in localStorage (`icf-member-v1`) so the app opens offline. Listens live to `members/{uid}` and the user's `payments`. Admins (detected by a pending-payments probe the rules only allow for admins) get in free.
 - `js/engine.js` — rendering engine shared by all forms (`CF.engine`: `layout`, `svg`, `pdf`, `docx`) and helpers (`CF.util`: `P`, `linesOf`, `clean`, `cellList`).
 - `js/app.js` — app shell: hash routing (`#/` home, `#/f/<id>` a form), field rendering, autosave, export, Web Share.
 - `forms/<id>.js` — one file per form. Each calls `CF.register({...})`.
 - `admin.html`, `js/admin.js` — admin panel (pending payments approve/reject, all payments, members extend/revoke, users give access).
-- `firestore.rules` — security. Collections: `admins/{uid}` (made by hand in console), `users/{uid}` (profile written at sign-in), `payments/{utr}` (doc ID = 12-digit UTR, so one UTR can be claimed once; users create `status: 'pending'` only), `members/{uid}` (`validUntil` Timestamp; admin-only writes).
+- `firestore.rules` — security. The owner account (email hard-coded in `isOwner()`) is always admin; `admins/{uid}` adds extra admins by hand in console. `users/{uid}` (profile written at sign-in), `payments/{utr}` (doc ID = 12-digit UTR, so one UTR can be claimed once; users create `status: 'pending'` only), `members/{uid}` (`validUntil` Timestamp; admin-only writes).
 - `firebase.json`, `firestore.indexes.json` — Firebase Hosting (serves the repo root, ignores docs/tests) and emulator ports.
 - `terms.html`, `privacy.html` — drafts with [placeholders]; the owner must complete them.
 - `lib/` — bundled so the app needs no CDN: jsPDF 2.x, docx 9.x, Firebase compat SDK 13.1.0 (app, auth, firestore), qrcode-generator 2.0.4. Do not replace with CDN links.

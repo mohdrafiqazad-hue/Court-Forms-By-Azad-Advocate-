@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // i Court Forms — who may read and write what.
-//   admins/{uid}     made by hand in the Firebase console (document ID = admin's UID)
+//   Owner            mohdrafiqazad@gmail.com is always the admin (no setup needed)
+//   admins/{uid}     optional extra admins, made by hand in the Firebase console (document ID = UID)
 //   users/{uid}      profile the app writes at each sign-in
 //   payments/{utr}   a user's claim "I paid": document ID = the 12-digit UPI transaction ID,
 //                    so the same transaction ID can only ever be claimed once
@@ -10,7 +11,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function own(uid) { return signedIn() && request.auth.uid == uid; }
-    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isOwner() { return signedIn() && request.auth.token.email == 'mohdrafiqazad@gmail.com' && request.auth.token.email_verified == true; }
+    function isAdmin() { return isOwner() || (signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))); }
 
     match /admins/{uid} {
       allow get: if own(uid);

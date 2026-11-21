@@ -45,7 +45,8 @@
   function renderAcct(m) {
     const el = $('#acct'); if (!el) return;
     el.hidden = false;
-    el.innerHTML = `<span>${esc(m.name || m.email)}</span><span class="dot">·</span><span>Member till ${fmtDate(m.validUntil)}</span><button type="button" class="linkbtn" id="btnSignOut2">Sign out</button>`;
+    const status = m.admin ? 'Owner · <a href="admin.html">Admin panel</a>' : 'Member till ' + fmtDate(m.validUntil);
+    el.innerHTML = `<span>${esc(m.name || m.email)}</span><span class="dot">·</span><span>${status}</span><button type="button" class="linkbtn" id="btnSignOut2">Sign out</button>`;
     $('#btnSignOut2').onclick = signOut;
   }
 
@@ -112,15 +113,20 @@
   function watch(user) {
     const { db } = CF.fb;
     const me = { uid: user.uid, email: user.email || '', name: user.displayName || '' };
-    let member, pays; // undefined until first answer
+    let member, pays, admin; // undefined until first answer
 
     db.collection('users').doc(user.uid).set({
       email: me.email, name: me.name, photo: user.photoURL || '', lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
     }, { merge: true }).catch(e => console.warn('profile', e.code));
 
     const decide = () => {
-      if (member === undefined || pays === undefined) return;
+      if (member === undefined || pays === undefined || admin === undefined) return;
       clearTimeout(offlineTimer);
+      if (admin) { // the owner (or an extra admin) uses the app free
+        const m = { ...me, validUntil: Date.now() + 30 * 86400000, admin: true };
+        writeCache(m); unlock(m);
+        return;
+      }
       const until = member && member.validUntil ? member.validUntil.toMillis() : 0;
       if (until > Date.now()) {
         const m = { ...me, validUntil: until };
@@ -145,8 +151,11 @@
         .sort((a, b) => (b.createdAt ? b.createdAt.toMillis() : 0) - (a.createdAt ? a.createdAt.toMillis() : 0));
       decide();
     }, fail));
+    // Admin check: only an admin may list everyone's pending payments (firestore.rules decides).
+    db.collection('payments').where('status', '==', 'pending').limit(1).get()
+      .then(() => { admin = true; decide(); }, e => { admin = false; if (e.code !== 'permission-denied') console.warn('admin check', e.code); decide(); });
     // No answer for a while and no valid cache → probably offline
-    offlineTimer = setTimeout(() => { if (member === undefined || pays === undefined) fail({ code: 'timeout' }); }, 12000);
+    offlineTimer = setTimeout(() => { if (member === undefined || pays === undefined || admin === undefined) fail({ code: 'timeout' }); }, 12000);
   }
 
   // ------------------------------------------------------------ pay screen

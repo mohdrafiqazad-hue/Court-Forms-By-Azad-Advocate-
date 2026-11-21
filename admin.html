@@ -40,13 +40,14 @@
 
   <div id="aSetup" class="box" hidden>Firebase is not configured yet — fill <code>js/config.js</code> (see SETUP.md).</div>
   <div id="aLogin" class="box" hidden>
-    <p>Sign in with the Google account that is an admin.</p>
+    <p>Sign in with the owner's Google account.</p>
     <button type="button" class="btn primary" id="btnIn">Sign in with Google</button>
     <p id="aMsg" class="err"></p>
   </div>
   <div id="aNot" class="box" hidden>
     <p><strong>This account is not an admin.</strong></p>
-    <p class="small">To make it an admin: Firebase console → Firestore Database → <em>Start collection</em> <code>admins</code> → Document ID = the UID below → add any field (e.g. <code>name</code>) → Save. Then reload this page.</p>
+    <p class="small">Only the owner's Google account can open the admin panel. Sign out and sign in with the owner account.</p>
+    <p class="small muted">To add another admin: Firebase console → Firestore Database → <em>Start collection</em> <code>admins</code> → Document ID = the UID below → add any field (e.g. <code>name</code>) → Save.</p>
     <span class="uid" id="myUid"></span>
     <button type="button" class="btn sm" id="btnCopyUid">Copy UID</button>
   </div>
