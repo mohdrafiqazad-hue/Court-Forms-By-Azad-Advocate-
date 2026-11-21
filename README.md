@@ -26,6 +26,10 @@ Live: **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/** (Gi
 - Form mein bhara case seedha client mein save karna ho toh **"+ Save this form's case here"**. Case editor mein **"Take from this form"** bhi hai.
 - **"Fill in as"** se client ki apni details (Plaintiff / Defendant / Applicant) bhi bhar sakte hain.
 
+## Logo aur About
+- App ka logo (iCourt Forms) app icon, khulte waqt ki splash screen, login screen aur upar ki patti mein hai. App ke rang logo ke hisaab se navy aur gold hain.
+- **About** (home par neeche, aur login screen par): app ke baare mein aur **Founder**: Mohammad Rafiq Azad, Advocate, Chamber No. 786 & 92, District & Sessions Court, Jalandhar, Punjab, Mobile 7009646869 (Call / WhatsApp). Ye jaankari `js/config.js` → `about` mein badli ja sakti hai.
+
 ## Bhasha
 App **English, हिंदी aur ਪੰਜਾਬੀ** mein chalti hai. Login screen par ya upar ki patti mein bhasha chunein; phone yaad rakhta hai. Form ke har khane ke neeche uska English naam bhi likha aata hai. **Court ka printed form (Word/PDF) hamesha English mein rehta hai**, isliye jaankari English mein hi bharein.
 

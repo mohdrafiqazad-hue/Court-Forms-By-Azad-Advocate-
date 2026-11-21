@@ -8,7 +8,7 @@ const FILES = [
   './lib/firebase-app-compat.js', './lib/firebase-auth-compat.js', './lib/firebase-firestore-compat.js',
   './terms.html', './privacy.html',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png',
-  './icons/maskable-512.png', './icons/apple-touch-icon.png', './icons/favicon-48.png',
+  './icons/maskable-512.png', './icons/logo-512.png', './icons/apple-touch-icon.png', './icons/favicon-48.png',
 ];
 
 self.addEventListener('install', e => {

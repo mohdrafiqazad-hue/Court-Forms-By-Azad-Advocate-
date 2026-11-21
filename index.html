@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#6b2617">
+<meta name="theme-color" content="#132c6b">
 <meta name="description" content="i Court Forms — fill court forms, see a live preview, and export Word and PDF in the exact printed format. Works offline.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-48.png" sizes="48x48">
@@ -17,10 +17,13 @@
 </head>
 <body>
 
+<!-- Splash: the logo while the app opens -->
+<div id="splash" class="splash" aria-hidden="true"><img src="icons/logo-512.png" alt="" width="190" height="190"><p data-i18n="tagline">Court forms in the exact printed format</p></div>
+
 <!-- Sign-in & membership gate -->
 <section id="gate" class="gate">
   <div class="gate-box">
-    <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64"><span>i Court Forms</span><small data-i18n="tagline">Court forms in the exact printed format</small></div>
+    <div class="brand"><img src="icons/logo-512.png" alt="i Court Forms" width="132" height="132"><small data-i18n="tagline">Court forms in the exact printed format</small></div>
     <div class="langpick" role="group" data-i18n-aria="language" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="hi">हिंदी</button><button type="button" data-lang="pa">ਪੰਜਾਬੀ</button></div>
 
     <div id="gLoading" class="gscreen"><p class="muted center" data-i18n="loading">Loading…</p></div>
@@ -46,6 +49,7 @@
         <button type="button" class="btn sm" data-install-btn hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg> <span data-i18n="installTitle">Install the app</span></button>
         <p class="small muted" data-install-ios hidden data-i18n="iosSteps">On iPhone: tap Share at the bottom, then “Add to Home Screen”.</p>
       </div>
+      <p class="small center"><button type="button" class="linkbtn about-link" data-about data-i18n="about">About</button></p>
       <p class="small muted" data-i18n-html="agree">By continuing you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
     </div>
 
@@ -70,7 +74,7 @@
 <section id="home" class="screen" hidden>
   <header class="appbar">
     <div class="appbar-in">
-      <div class="brand-sm"><img src="icons/icon-192.png" alt="" width="30" height="30"><span>i Court Forms</span></div>
+      <div class="brand-sm"><img src="icons/logo-512.png" alt="" width="38" height="38"><span>i Court Forms</span></div>
       <select class="langsel" data-i18n-aria="language" aria-label="Language"><option value="en">English</option><option value="hi">हिंदी</option><option value="pa">ਪੰਜਾਬੀ</option></select>
       <div id="acct" class="acct" hidden></div>
     </div>
@@ -100,6 +104,11 @@
     <div id="formList" class="cards"></div>
     <h2 class="list-h" data-i18n="soonH">Coming soon</h2>
     <ul id="planned" class="planned"></ul>
+    <button type="button" class="teamcard aboutcard" data-about>
+      <img src="icons/logo-512.png" alt="" width="46" height="46">
+      <span class="tc-body"><strong data-i18n="about">About</strong><span data-i18n="aboutSub">The app and its founder</span></span>
+      <svg class="chev" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+    </button>
     <p class="foot" data-i18n-html="foot">Always check the exported form before filing. · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a></p>
   </main>
 </section>
@@ -194,6 +203,15 @@
 <script src="js/gate.js"></script>
 <script src="js/app.js"></script>
 <script>
+  // Hide the splash once the page has loaded (shown at least ~0.9 s)
+  (function () {
+    var t0 = Date.now();
+    function hide() {
+      var s = document.getElementById('splash'); if (!s) return;
+      setTimeout(function () { s.classList.add('hide'); setTimeout(function () { s.remove(); }, 450); }, Math.max(0, 900 - (Date.now() - t0)));
+    }
+    if (document.readyState === 'complete') hide(); else window.addEventListener('load', hide);
+  })();
   // Offline support (works over http/https; ignored for file://)
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

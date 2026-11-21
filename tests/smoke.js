@@ -216,6 +216,20 @@ const pdfInfo = buf => {
   check(await page.evaluate(() => !('sign' in CF.store) && !CF.store.cases.dated) && await page.$('#nextRow') === null && await page.$('#homeDates') === null, 'next date and signature features are gone');
   await page.click('[data-sheet-close]');
 
+  // Logo, splash and About
+  console.log('Logo and About');
+  await page.goto(APP + '#/'); await page.reload({ waitUntil: 'domcontentloaded' });
+  check(await page.$('#splash img[src="icons/logo-512.png"]') !== null, 'splash with the logo shows while the app opens');
+  await page.waitForSelector('#splash', { state: 'detached', timeout: 5000 }).catch(() => {});
+  check(await page.$('#splash') === null, 'splash goes away by itself');
+  check(await page.getAttribute('#home .brand-sm img', 'src') === 'icons/logo-512.png', 'logo in the top bar');
+  await page.click('#home .aboutcard'); await page.waitForSelector('#sheet:not([hidden]) .founder');
+  const ab = await page.textContent('#sheetBody');
+  check(ab.includes('Mohammad Rafiq Azad, Advocate') && ab.includes('Chamber No. 786 & 92, District & Sessions Court, Jalandhar, Punjab') && ab.includes('7009646869'), 'About shows the founder, chamber and mobile');
+  check(await page.getAttribute('#sheetBody .founder a[href^="tel:"]', 'href') === 'tel:+917009646869', 'tap-to-call link');
+  await page.click('[data-sheet-close]');
+  await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#paper svg');
+
   // phone layout
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   const pp = await phone.newPage();

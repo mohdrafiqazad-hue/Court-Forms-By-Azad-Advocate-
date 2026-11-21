@@ -526,6 +526,32 @@
     if (f) { if (f !== form) openForm(f); } else showHome();
   }
 
+  // ------------------------------------------------------------ About (also reachable from the sign-in screen)
+  function showAbout() {
+    const A = (window.ICF_CONFIG && window.ICF_CONFIG.about) || {};
+    const phone = String(A.phone || '').replace(/\D/g, '');
+    const wa = phone.length === 10 ? '91' + phone : phone;
+    openSheet(t('about'), `<div class="about">
+      <img class="about-logo" src="icons/logo-512.png" alt="i Court Forms" width="150" height="150">
+      <p class="about-tag">${escH(t('tagline'))}</p>
+      <h3 class="sheet-h">${escH(t('aboutApp'))}</h3>
+      <ul class="ticks">${['ab1', 'ab2', 'ab3', 'ab4'].map(k => `<li>${escH(t(k))}</li>`).join('')}</ul>
+      ${A.founder ? `<h3 class="sheet-h">${escH(t('founder'))}</h3>
+      <div class="founder">
+        <strong>${escH(A.founder)}${A.title ? ', ' + escH(A.title) : ''}</strong>
+        ${A.address ? `<span>${escH(A.address)}</span>` : ''}
+        ${phone ? `<span>${escH(t('mobile'))}: <a href="tel:+${escH(wa)}">${escH(A.phone)}</a></span>
+        <div class="sheet-row"><a class="btn primary" href="tel:+${escH(wa)}">${escH(t('call'))}</a><a class="btn" href="https://wa.me/${escH(wa)}" target="_blank" rel="noopener">${escH(t('whatsapp'))}</a></div>` : ''}
+      </div>` : ''}
+      <p class="small muted about-foot">${t('foot')}</p>
+    </div>`);
+  }
+  // Works before sign-in too: open / close the About sheet
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-about]')) { e.preventDefault(); showAbout(); return; }
+    if (!$('#sheet').hidden && (e.target === $('#sheet') || e.target.closest('[data-sheet-close]'))) closeSheet();
+  });
+
   // The gate (js/gate.js) calls showApp() once the user is signed in with an active membership.
   let started = false;
   CF.showApp = () => { if (!started) { started = true; init(); } else { form = null; route(); } };

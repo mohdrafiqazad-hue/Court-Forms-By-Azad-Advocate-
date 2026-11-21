@@ -10,6 +10,14 @@ window.ICF_CONFIG = {
     appId: '1:131820138603:web:e4b0d904a4b42861acc12e',
   },
 
+  // "About" section (shown in the app as written here)
+  about: {
+    founder: 'Mohammad Rafiq Azad',
+    title: 'Advocate',
+    address: 'Chamber No. 786 & 92, District & Sessions Court, Jalandhar, Punjab',
+    phone: '7009646869',
+  },
+
   // Optional: WhatsApp number (with country code, digits only, e.g. 919876543210) shown to users waiting for approval (a button to message you)
   supportWhatsApp: '',
 };
