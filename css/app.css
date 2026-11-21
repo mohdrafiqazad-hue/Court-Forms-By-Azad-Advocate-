@@ -194,3 +194,82 @@ code { font-size: .92em; background: #f0ebe2; padding: 1px 5px; border-radius: 4
 .updatebar { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px; background: var(--ink); color: #fff; padding: 8px 10px 8px 16px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.25); font-size: 14px; max-width: calc(100% - 24px); }
 .updatebar .btn { background: #f3d9a4; border-color: #f3d9a4; color: #4f1b10; font-weight: 700; }
 .updatebar span { white-space: nowrap; }
+
+/* ---------- preview zoom ---------- */
+.zoombtn { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.zoombtn[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+#paper { cursor: zoom-in; }
+#stage.zoomed { overflow: auto !important; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+#stage.zoomed #paper { cursor: default; max-width: none !important; width: 1008px; flex: none; }
+.fv.portrait #stage.zoomed #paper { width: 720px; }
+
+/* ---------- phone: bigger text and touch targets ---------- */
+@media (max-width: 820px) {
+  body { font-size: 16.5px; }
+  .btn { min-height: 44px; font-size: 15.5px; border-radius: 10px; }
+  .btn.sm { min-height: 40px; font-size: 15px; padding: 7px 14px; }
+  /* app bar & hero */
+  .appbar-in { min-height: 64px; }
+  .brand-sm span { font-size: 19px; }
+  .langsel { font-size: 14px; padding: 7px 8px; }
+  .acct .avatar { width: 36px; height: 36px; font-size: 15px; }
+  .acct .out { padding: 8px 10px; }
+  .hero .hello { font-size: 15.5px; }
+  .hero h1 { font-size: 27px; }
+  .hero p { font-size: 16px; }
+  /* cards & lists */
+  .list-h { font-size: 13.5px; }
+  .card, .teamcard { padding: 18px 16px; gap: 14px; }
+  .card .ic, .teamcard .ic { width: 52px; height: 52px; }
+  .card-body strong, .tc-body strong { font-size: 19.5px; }
+  .card-body > span, .tc-body > span { font-size: 15.5px; }
+  .card-body em { font-size: 13.5px; padding: 3px 11px; }
+  .planned li { font-size: 16px; padding: 13px 14px; }
+  .planned li em { font-size: 12px; }
+  .foot { font-size: 14px; }
+  /* form screen */
+  .fv-head { padding: 10px 12px; }
+  .fv-title strong { font-size: 20px; }
+  .fv-title small { font-size: 13.5px; }
+  .back { width: 44px; height: 44px; font-size: 20px; }
+  .tabs { top: 64px; }
+  .tabs button { font-size: 17px; padding: 14px 0; }
+  .mini { gap: 10px; margin-bottom: 8px; }
+  #count { font-size: 14.5px; }
+  h3 { font-size: 13.5px; margin: 26px 0 12px; }
+  .fld { margin-bottom: 18px; }
+  .fld > span { font-size: 16px; margin-bottom: 6px; }
+  .fld small { font-size: 14px; }
+  .fld .en-label { font-size: 13px; }
+  .linkbtn { font-size: 15px; }
+  input, textarea, select { font-size: 18px; padding: 12px 12px; border-radius: 10px; }
+  input, select { min-height: 50px; }
+  .actions .btn { min-height: 52px; font-size: 17.5px; }
+  .seg button { font-size: 15.5px; padding: 10px 14px; }
+  .tools { flex-wrap: wrap; }
+  #stage { padding: 14px 12px 24px; }
+  #toast { font-size: 15.5px; padding: 12px 18px; }
+  #confirm .box { padding: 22px; }
+  #confirm p { font-size: 17px; }
+  .note { font-size: 15px; }
+  /* sign-in & waiting */
+  .gate { padding-top: 36px; }
+  .brand span { font-size: 28px; }
+  .brand small { font-size: 15px; }
+  .langpick button { font-size: 15px; padding: 8px 15px; }
+  .ticks li { font-size: 16.5px; }
+  .small { font-size: 14.5px; }
+  .btn.google { min-height: 56px; font-size: 17.5px; }
+  .gscreen h2 { font-size: 22px; }
+  /* team */
+  .atabs button { font-size: 15.5px; padding: 11px 8px; }
+  .item { padding: 14px 16px; }
+  .item .who strong { font-size: 17.5px; }
+  .item .who span { font-size: 15px; }
+  .item .meta { font-size: 14.5px; }
+  .st { font-size: 13.5px; padding: 3px 10px; }
+  .badge { font-size: 13.5px; line-height: 21px; min-width: 23px; }
+  .updatebar { font-size: 15px; }
+}
+.brand-sm span { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 420px) { #home .brand-sm span { display: none; } .appbar-in { gap: 8px; } }

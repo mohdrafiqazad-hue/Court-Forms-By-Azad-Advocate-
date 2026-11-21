@@ -10,7 +10,7 @@ Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Fir
 
 ## Files
 - `index.html` — gate screens (`#gate`: loading, setup, login, wait, offline), home (form list), Team screen, form screen.
-- `css/app.css` — styles. Mobile-first: under 820px the form screen has Fill / Preview tabs and a fixed bottom bar with the export buttons.
+- `css/app.css` — styles. Mobile-first: under 820px the form screen has Fill / Preview tabs and a fixed bottom bar with the export buttons, and a phone block enlarges text (16.5px body, 18px inputs, 50px+ touch targets). The preview has a Zoom in / Fit to screen button (`#btnZoom`, also tap the page) that shows the page at full size and scrolls inside the preview. Checked at 360px width.
 - `js/config.js` — owner settings: Firebase web config, support WhatsApp. Not secret.
 - `js/gate.js` — sign-in + approval gate. Sets `CF.gated`/`CF.locked`, calls `CF.showApp()` / `CF.hideApp()` (defined in app.js). Writes `users/{uid}` at sign-in (that is the request), listens live to `members/{uid}`. Caches an approval in localStorage (`icf-member-v1`, at most 30 days) so the app opens offline. Admins (detected by listing `users`, which the rules only allow for admins) always get in.
 - `js/i18n.js` — interface language English / हिंदी / ਪੰਜਾਬੀ (`CF.t(key, vars)`, `CF.i18n.ft(form, text)`, `data-i18n*` attributes, choice saved in localStorage `icf-lang`, pickers on the sign-in screen and in the app bar). Every new UI text needs all three languages in its dictionary; every form needs `tr.hi` / `tr.pa` for its name, desc, court, groups, labels, hints and option texts (`tests/smoke.js` checks both). The printed Word/PDF form always stays in English.

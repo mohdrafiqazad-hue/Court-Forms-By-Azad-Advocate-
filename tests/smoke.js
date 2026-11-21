@@ -98,6 +98,11 @@ const pdfInfo = buf => {
   await pp.screenshot({ path: path.join(OUT, 'phone-preview.png') });
   const overflow = await pp.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   check(!overflow, 'phone: no sideways scrolling');
+  await pp.click('#btnZoom'); await pp.waitForTimeout(200);
+  const z = await pp.evaluate(() => ({ page: document.documentElement.scrollWidth > window.innerWidth + 1, paper: document.querySelector('#paper').getBoundingClientRect().width }));
+  check(!z.page && z.paper > 900, 'phone: Zoom in makes the page readable (' + Math.round(z.paper) + 'px) and scrolls inside the preview only');
+  const fz = await pp.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.actions .btn')).fontSize));
+  check(fz >= 17, 'phone: big buttons (' + fz + 'px)');
   await phone.close();
 
   // offline

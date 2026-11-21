@@ -158,6 +158,16 @@
       e.preventDefault(); data[k] = todayStr(); save(); fillInputs(); render();
     });
     $('#orientSeg').addEventListener('click', e => { const o = e.target.dataset.o; if (!o) return; orient = o; save(); render(); });
+    // Preview zoom (mainly for phones): bigger page, scroll with a finger; tap the page to switch too
+    const setZoom = on => {
+      $('#stage').classList.toggle('zoomed', on);
+      $('#btnZoom').setAttribute('aria-pressed', String(on));
+      $('#btnZoom [data-zoom-label]').textContent = t(on ? 'zoomFit' : 'zoomIn');
+    };
+    $('#btnZoom').addEventListener('click', () => setZoom(!$('#stage').classList.contains('zoomed')));
+    $('#paper').addEventListener('click', () => { if (!$('#stage').classList.contains('zoomed')) setZoom(true); });
+    CF.i18n.onChange(() => setZoom($('#stage').classList.contains('zoomed')));
+    setZoom(false);
     document.querySelectorAll('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => { setTab(b.dataset.tab); window.scrollTo(0, 0); }));
 
     $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => saveFile(base() + '.docx', await makeDocx()), t('wordFail')));

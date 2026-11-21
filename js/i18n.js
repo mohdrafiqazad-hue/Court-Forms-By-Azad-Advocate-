@@ -119,6 +119,8 @@
     installed: ['Installed — open i Court Forms from your home screen', 'इंस्टॉल हो गया — होम स्क्रीन से i Court Forms खोलें', 'ਇੰਸਟਾਲ ਹੋ ਗਿਆ — ਹੋਮ ਸਕ੍ਰੀਨ ਤੋਂ i Court Forms ਖੋਲ੍ਹੋ'],
     updateReady: ['New version available', 'नया वर्ज़न आ गया है', 'ਨਵਾਂ ਵਰਜ਼ਨ ਆ ਗਿਆ ਹੈ'],
     reload: ['Refresh', 'रिफ्रेश करें', 'ਰਿਫ੍ਰੈਸ਼ ਕਰੋ'],
+    zoomIn: ['Zoom in', 'बड़ा करें', 'ਵੱਡਾ ਕਰੋ'],
+    zoomFit: ['Fit to screen', 'स्क्रीन में फिट', 'ਸਕ੍ਰੀਨ ’ਚ ਫਿੱਟ'],
     // planned forms (English name is the key)
     'Vakalatnama': ['Vakalatnama', 'वकालतनामा', 'ਵਕਾਲਤਨਾਮਾ'],
     'Memo of Appearance': ['Memo of Appearance', 'हाज़िरी मेमो', 'ਹਾਜ਼ਰੀ ਮੀਮੋ'],
