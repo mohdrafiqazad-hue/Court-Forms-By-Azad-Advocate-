@@ -11,7 +11,7 @@ Abhi ka form: **Form Nakal** (Form for Copies), District Courts Jalandhar. Aage 
 4. Malik (`mohdrafiqazad@gmail.com`) ke liye app hamesha khuli hai. Home par **"Owner · Team"** dabakar approve/remove karte hain (Madhur Ganga jaisa, app ke andar hi).
 5. Approval phone mein yaad rehti hai, toh app offline bhi khulti hai (har 30 din mein ek baar online check)
 
-Live: **https://i-court-forms.web.app** · Setup ki poori jaankari: **[SETUP.md](SETUP.md)**
+Live: **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/** (GitHub Pages; Firebase par bhi: i-court-forms.web.app) · Setup ki poori jaankari: **[SETUP.md](SETUP.md)**
 
 ## Phone par
 - Form screen mein **Fill** aur **Preview** ke tabs, aur neeche **Word / PDF** ke button.
@@ -32,7 +32,8 @@ Live: **https://i-court-forms.web.app** · Setup ki poori jaankari: **[SETUP.md]
 | `css/app.css` | Design |
 | `firestore.rules` | Database ki suraksha: kaun kya padh/likh sakta hai |
 | `firebase.json` | Firebase Hosting aur emulator settings |
-| `.github/workflows/deploy.yml` | Har update par app apne aap live karta hai |
+| `.github/workflows/pages.yml` | Har update par app GitHub Pages (github.io) par live karta hai |
+| `.github/workflows/deploy.yml` | Har update par Firebase (database rules + web.app) update karta hai |
 | `terms.html`, `privacy.html` | Terms aur Privacy Policy (**draft**, live se pehle poora karein) |
 | `lib/` | PDF, Word aur Firebase ki libraries (offline ke liye andar) |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Install aur offline ke liye |

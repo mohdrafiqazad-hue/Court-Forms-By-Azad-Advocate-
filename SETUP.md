@@ -63,6 +63,13 @@ Ab repo chahein toh wapas **private** kar sakte hain. Firebase Hosting ke liye p
 
 (Computer se bhi ho sakta hai: Node.js install karke `npm install -g firebase-tools`, `firebase login`, repo folder mein `firebase deploy`.)
 
+## Step 6b: GitHub Pages (github.io link)
+App ka main link: **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/**. Ek baar ye do kaam:
+1. GitHub repo → **Settings → Pages → Build and deployment → Source: "GitHub Actions"**.
+2. Firebase console → **Authentication → Settings → Authorized domains → Add domain** → `mohdrafiqazad-hue.github.io` (iske bina github.io par Google login nahi chalega).
+
+Uske baad har update par `.github/workflows/pages.yml` app ko github.io par apne aap daal deta hai. Database aur login Firebase par hi rehte hain (Madhur Ganga jaisa).
+
 ## Step 7: Admin (malik)
 Kuch karne ki zaroorat nahi. **`mohdrafiqazad@gmail.com` hamesha admin hai** (ye `firestore.rules` mein likha hai). Is account se:
 - app **bina approval** ke khulti hai, aur home par "Owner · Admin panel" dikhta hai;

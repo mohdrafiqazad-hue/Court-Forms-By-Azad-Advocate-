@@ -23,7 +23,8 @@ Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Fir
 - `lib/` — bundled so the app needs no CDN: jsPDF 2.x, docx 9.x, Firebase compat SDK 13.1.0 (app, auth, firestore). Do not replace with CDN links.
 - `manifest.webmanifest`, `sw.js`, `icons/` — installable PWA, offline. `sw.js` never intercepts cross-origin or `/__/` (Firebase) requests.
 - `tests/smoke.js` (format), `tests/gate-e2e.js` (sign-in/approval/admin against emulators).
-- `.github/workflows/deploy.yml` — deploys to Firebase Hosting + rules on push.
+- `.github/workflows/pages.yml` — publishes to GitHub Pages on push.
+- `.github/workflows/deploy.yml` — deploys Firebase Hosting + Firestore rules on push.
 - `.nojekyll` — for GitHub Pages, if used.
 
 ## How a form works (one model → three outputs)
@@ -64,7 +65,8 @@ node tests/gate-e2e.js http://localhost:8002/ /tmp/cf-e2e           # login → 
 `gate-e2e.js` signs in with emulator test credentials (the real Google popup needs apis.google.com).
 
 ## Deploy
-Live site: **https://i-court-forms.web.app** (Firebase project `i-court-forms`, see `.firebaserc`).
+Main link (owner's choice): **https://mohdrafiqazad-hue.github.io/Court-Forms-By-Azad-Advocate-/** — `.github/workflows/pages.yml` publishes an allow-list of app files (`index.html admin.html terms.html privacy.html manifest.webmanifest sw.js css js forms lib icons`; add new top-level files there) to GitHub Pages on every push, stamping `VERSION` in `sw.js`. Needs Settings → Pages → Source: GitHub Actions, and `mohdrafiqazad-hue.github.io` in Firebase Auth → Authorized domains. All paths are relative, so the app works under the repo sub-path.
+Also live at https://i-court-forms.web.app (Firebase project `i-court-forms`, see `.firebaserc`).
 `.github/workflows/deploy.yml` deploys hosting and then `firestore.rules` on every push to `main` / `ccr-1ddb94dd-s0x9y0` (or by hand: Actions → Deploy to Firebase → Run workflow). It stamps `VERSION` in `sw.js` with the commit SHA, so installed apps update. Needs the repo secret `FIREBASE_SERVICE_ACCOUNT` (service account JSON with roles Firebase Admin, Service Usage Consumer and Firebase Rules Admin — the first alone gets 403s); without it the job skips. Manual alternative: `firebase deploy`.
 
 ## Known limits / next steps
