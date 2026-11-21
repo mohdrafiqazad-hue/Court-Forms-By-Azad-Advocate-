@@ -38,19 +38,7 @@
     { key: 'aScribe', profile: true, label: 'Signature of Scribe', type: 'text' },
   ];
 
-  const SAMPLE = {
-    copyType: '', courtFee: '', delivery: '', reqNo: '', reqDate: '12.11.2026',
-    nature: 'Criminal (Misc.) - Domestic Violence Complaint\nCase No. COMA/102/2022',
-    plaintiff: 'Rinki', defendant: 'Surinder Singh',
-    claim: 'Complaint under the Protection of Women\nfrom Domestic Violence Act, 2005', village: '',
-    court: 'Sh. Parteek Gupta, JMIC, Jalandhar\n(Original)',
-    decision: 'Pending\nNext Date: 11.12.2026', purpose: 'For Record',
-    copies: 'Uncertified copy of the complete court file, i.e. Petition, Affidavit, all Documents, all Orders of the Court and all Statements',
-    seal: 'Through Counsel\nMohammad Rafiq Azad, Advocate',
-    aName: 'Mohammad Rafiq Azad,\nAdvocate (Counsel)', aFather: '', aWork: 'Counsel',
-    aProfession: 'Advocate,\nChamber No. 786 & 92,\nNew Court Complex,\nDistrict & Sessions Court,\nJalandhar',
-    aPO: 'Jalandhar', aPS: '', aTehsil: 'Jalandhar', aDistrict: 'Jalandhar', aScribe: '',
-  };
+
 
 
   // Field names in हिंदी / ਪੰਜਾਬੀ for the app screen only. The printed form stays in English.
@@ -206,8 +194,6 @@
     defaultOrient: 'landscape',
     fields: FIELDS,
     tr: TR,
-    sample: SAMPLE,
-    sampleLabel: 'Rinki vs Surinder Singh',
     // Client book → a client's saved case fills these form fields (case keys: nature, plaintiff, defendant, claim, place, court, decision)
     clientCaseMap: { nature: 'nature', plaintiff: 'plaintiff', defendant: 'defendant', claim: 'claim', village: 'place', court: 'court', decision: 'decision' },
     // Client book: which form fields a saved client's own details fill (client keys: name, father, occupation, address, po, ps, tehsil, district)

@@ -20,6 +20,21 @@
     return out;
   };
 
+  // One-time clean-up: the "Sample case" was removed. Drop its draft and saved copies, and the
+  // field suggestions it seeded, so nothing of it shows up again.
+  try {
+    if (!localStorage.getItem('icf-sample-gone-v1')) {
+      const isSample = d => !!d && /COMA\/102\/2022/.test(d.nature || '') && d.plaintiff === 'Rinki';
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (/^cf-form-.+-v1$/.test(k)) { try { const v = JSON.parse(localStorage.getItem(k)); if (v && isSample(v.data)) localStorage.removeItem(k); } catch (e) { /* ignore */ } }
+      }
+      write(K.cases, read(K.cases, []).filter(c => !isSample(c.data)));
+      localStorage.removeItem(K.hist);
+      localStorage.setItem('icf-sample-gone-v1', '1');
+    }
+  } catch (e) { /* storage unavailable */ }
+
   const cases = {
     all() { return read(K.cases, []).slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); },
     forForm(formId) { return this.all().filter(c => c.formId === formId); },

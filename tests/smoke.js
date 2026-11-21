@@ -11,6 +11,27 @@ const APP = URL_ + '?nogate'; // localhost-only switch: skip sign-in for format 
 const OUT = process.argv[3] || path.join(__dirname, 'out');
 fs.mkdirSync(OUT, { recursive: true });
 
+// Made-up test details (no real person or case). The app itself has no sample case.
+const TEST_DATA = {
+  nakal: {
+    reqDate: '12.11.2026',
+    nature: 'Criminal (Misc.) - Complaint\nCase No. COMA/55/2024',
+    plaintiff: 'Asha Rani', defendant: 'Raj Kumar',
+    claim: 'Complaint under Section 138 of the\nNegotiable Instruments Act, 1881',
+    court: 'Sh. A. K. Verma, JMIC, Jalandhar\n(Original)',
+    decision: 'Pending\nNext Date: 10.01.2027', purpose: 'For Record',
+    copies: 'Uncertified copy of the complete court file, i.e. Complaint, Affidavit, all Documents, all Orders of the Court and all Statements',
+    seal: 'Through Counsel\nTest Advocate',
+    aName: 'Test Advocate,\nAdvocate (Counsel)', aWork: 'Counsel',
+    aProfession: 'Advocate,\nChamber No. 1,\nDistrict Courts,\nJalandhar',
+    aPO: 'Jalandhar', aTehsil: 'Jalandhar', aDistrict: 'Jalandhar',
+  },
+};
+async function fillTest(p, formId) {
+  for (const [k, v] of Object.entries(TEST_DATA[formId] || {})) await p.fill('#f_' + k, v);
+  await p.waitForTimeout(150);
+}
+
 const pdfInfo = buf => {
   const s = buf.toString('latin1');
   const pages = (s.match(/\/Type\s*\/Page[^s]/g) || []).length;
@@ -36,7 +57,7 @@ const pdfInfo = buf => {
     await page.goto(APP + '#/f/' + f.id);
     await page.waitForSelector('#paper svg');
     await page.click('#btnClear'); await page.click('#confirm [data-yes]');
-    await page.click('#btnSample'); await page.waitForTimeout(200);
+    await fillTest(page, f.id);
     for (const o of f.orientations) {
       if (f.orientations.length > 1) { await page.click(`#orientSeg [data-o="${o}"]`); await page.waitForTimeout(200); }
       await page.screenshot({ path: path.join(OUT, `${f.id}-${o}-screen.png`) });
@@ -92,22 +113,22 @@ const pdfInfo = buf => {
   const val = k => page.inputValue('#f_' + k);
   await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#fields textarea');
   await page.click('#btnClear'); await yes();
-  await page.click('#btnSample'); await yes();
+  await fillTest(page, 'nakal');
   await page.click('#btnSaveCase'); await page.waitForTimeout(150);
-  check((await page.textContent('#caseChip')).includes('Rinki vs Surinder Singh'), 'Save: case saved with a name from the parties and case no.');
+  check((await page.textContent('#caseChip')).includes('Asha Rani vs Raj Kumar'), 'Save: case saved with a name from the parties and case no.');
   await page.fill('#f_purpose', 'For filing appeal'); await page.click('#btnSaveCase');
   check(await page.evaluate(() => CF.store.cases.all().length) === 1, 'Save again updates the same case');
   await page.click('#btnClear'); await yes();
   check(await page.isHidden('#caseChip') && (await val('plaintiff')) === '', 'New form: empty, not tied to the case');
   const chip = await page.$('[data-recent="court"] .chip');
   check(!!chip, 'suggestions of earlier values appear under fields');
-  if (chip) { await chip.click(); check((await val('court')).startsWith('Sh. Parteek Gupta'), 'tapping a suggestion fills the field'); }
+  if (chip) { await chip.click(); check((await val('court')).startsWith('Sh. A. K. Verma'), 'tapping a suggestion fills the field'); }
   await page.click('#btnCases'); await page.waitForSelector('#sheet:not([hidden]) .caserow');
   check((await page.$$('#caseList .caserow')).length === 1, 'My cases lists the saved case');
   await page.click('#caseList [data-case-open]'); await yes();
-  check((await val('plaintiff')) === 'Rinki' && (await val('purpose')) === 'For filing appeal', 'Open brings back every detail');
+  check((await val('plaintiff')) === 'Asha Rani' && (await val('purpose')) === 'For filing appeal', 'Open brings back every detail');
   await page.click('#btnCases'); await page.click('#caseList [data-case-copy]'); await yes();
-  check(await page.isHidden('#caseChip') && (await val('plaintiff')) === 'Rinki', 'Copy: same details as a new, unsaved case');
+  check(await page.isHidden('#caseChip') && (await val('plaintiff')) === 'Asha Rani', 'Copy: same details as a new, unsaved case');
   await page.fill('#f_reqDate', '01.01.2027'); await page.click('#btnSaveCase');
   check(await page.evaluate(() => CF.store.cases.all().length) === 2, 'the copy saves as a second case');
   await page.click('#btnCases'); await page.fill('#caseSearch', '01.01.2027'); await page.waitForTimeout(100);
@@ -122,15 +143,15 @@ const pdfInfo = buf => {
   await page.click('[data-sheet-close]');
   console.log('My details');
   await page.click('#btnMine'); await page.click('#btnSaveMine');
-  check((await page.textContent('#sheetBody')).includes('Mohammad Rafiq Azad'), 'Save these as my details shows what was saved'); await page.click('[data-sheet-close]');
+  check((await page.textContent('#sheetBody')).includes('Test Advocate'), 'Save these as my details shows what was saved'); await page.click('[data-sheet-close]');
   await page.click('#btnClear'); await yes();
   await page.click('#btnMine'); await page.click('#btnFillMine');
-  check((await val('aName')).startsWith('Mohammad Rafiq Azad') && (await val('aDistrict')) === 'Jalandhar' && (await val('plaintiff')) === '', 'Fill my details fills only your own details');
+  check((await val('aName')).startsWith('Test Advocate') && (await val('aDistrict')) === 'Jalandhar' && (await val('plaintiff')) === '', 'Fill my details fills only your own details');
   console.log('Home and backup');
   await page.goto(APP + '#/'); await page.waitForSelector('#formList .card');
   check(await page.isVisible('#recentCases') && (await page.$$('#recentList .caserow')).length === 1, 'home shows My cases');
   await page.click('#recentList .caserow'); await yes(); await page.waitForSelector('#formView:not([hidden])');
-  check((await val('plaintiff')) === 'Rinki', 'a case opens from the home screen');
+  check((await val('plaintiff')) === 'Asha Rani', 'a case opens from the home screen');
   await page.goto(APP + '#/'); await page.click('#btnAllCases');
   const [bk] = await Promise.all([page.waitForEvent('download'), page.click('#btnBackup')]);
   const bkFile = path.join(OUT, bk.suggestedFilename()); await bk.saveAs(bkFile);
@@ -177,15 +198,15 @@ const pdfInfo = buf => {
   // Client's cases → one tap fills the form
   console.log("Client's cases");
   await page.click('#btnClear'); await yes();
-  await page.click('#btnSample'); await yes();
+  await fillTest(page, 'nakal');
   await page.click('#btnClients'); await page.click('#btnNewClient');
-  await page.fill('#sheetBody [data-ck="name"]', 'Rinki'); await page.fill('#sheetBody [data-ck="father"]', 'Mohan Lal');
+  await page.fill('#sheetBody [data-ck="name"]', 'Asha Rani'); await page.fill('#sheetBody [data-ck="father"]', 'Mohan Lal');
   await page.click('#btnAddCase'); await page.click('#btnCaseFromForm');
-  check((await page.inputValue('#sheetBody [data-kk="nature"]')).includes('COMA/102/2022'), 'case editor takes the case particulars from the form');
+  check((await page.inputValue('#sheetBody [data-kk="nature"]')).includes('COMA/55/2024'), 'case editor takes the case particulars from the form');
   await page.click('#btnCaseDone');
   check((await page.$$('#sheetBody .ccases.edit .ccase')).length === 1, 'case added to the client');
   await page.click('#btnAddCase');
-  await page.fill('#sheetBody [data-kk="nature"]', 'Civil Suit\nCase No. CS/77/2025'); await page.fill('#sheetBody [data-kk="plaintiff"]', 'Rinki');
+  await page.fill('#sheetBody [data-kk="nature"]', 'Civil Suit\nCase No. CS/77/2025'); await page.fill('#sheetBody [data-kk="plaintiff"]', 'Asha Rani');
   await page.fill('#sheetBody [data-kk="defendant"]', 'Kamal Kumar'); await page.fill('#sheetBody [data-kk="court"]', 'Sh. Amit Sharma, Civil Judge (Jr. Div.), Jalandhar');
   await page.fill('#sheetBody [data-kk="decision"]', 'Decided on 05.10.2026'); await page.click('#btnCaseDone');
   await page.click('#btnSaveClient');
@@ -195,8 +216,8 @@ const pdfInfo = buf => {
   await page.click('#btnClients');
   check((await page.$$('#clientList [data-case-fill]')).length === 2, 'client book shows the client’s cases with “Fill this case”');
   await page.click('#clientList [data-case-fill] >> nth=0');
-  check((await val('nature')).includes('COMA/102/2022') && (await val('plaintiff')) === 'Rinki' && (await val('defendant')) === 'Surinder Singh'
-    && (await val('court')).startsWith('Sh. Parteek Gupta') && (await val('decision')).startsWith('Pending'), 'one tap fills every case particular');
+  check((await val('nature')).includes('COMA/55/2024') && (await val('plaintiff')) === 'Asha Rani' && (await val('defendant')) === 'Raj Kumar'
+    && (await val('court')).startsWith('Sh. A. K. Verma') && (await val('decision')).startsWith('Pending'), 'one tap fills every case particular');
   await page.click('#btnClients'); await page.click('#clientList [data-case-fill] >> nth=1');
   check((await val('nature')).includes('CS/77/2025') && (await val('defendant')) === 'Kamal Kumar' && (await val('claim')) === '' && (await val('decision')) === 'Decided on 05.10.2026',
     'filling another case replaces the old particulars (empty ones cleared)');
@@ -230,13 +251,31 @@ const pdfInfo = buf => {
   await page.click('[data-sheet-close]');
   await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#paper svg');
 
+  // Old "Sample case" left on a phone is cleaned once
+  console.log('Sample removed');
+  check(await page.$('#btnSample') === null, 'no Sample case button');
+  const old = await browser.newContext(); const op = await old.newPage();
+  await op.addInitScript(() => {
+    if (localStorage.getItem('seeded')) return;
+    const d = { nature: 'Criminal (Misc.) - Domestic Violence Complaint\nCase No. COMA/102/2022', plaintiff: 'Rinki', defendant: 'Surinder Singh' };
+    localStorage.setItem('cf-form-nakal-v1', JSON.stringify({ data: d, orient: 'landscape' }));
+    localStorage.setItem('icf-cases-v1', JSON.stringify([{ id: 's1', formId: 'nakal', title: 'old sample', data: d }, { id: 'u1', formId: 'nakal', title: 'mine', data: { plaintiff: 'Somebody' } }]));
+    localStorage.setItem('icf-history-v1', JSON.stringify({ nakal: { plaintiff: ['Rinki'] } }));
+    localStorage.setItem('seeded', '1');
+  });
+  await op.goto(APP + '#/f/nakal'); await op.waitForSelector('#fields textarea');
+  const left = await op.evaluate(() => ({ draft: localStorage.getItem('cf-form-nakal-v1'), cases: JSON.parse(localStorage.getItem('icf-cases-v1')).map(c => c.id), hist: localStorage.getItem('icf-history-v1') }));
+  check(!(left.draft || '').includes('Rinki') && left.cases.join() === 'u1' && !left.hist, 'old sample draft, saved copy and suggestions removed; own cases kept');
+  check((await op.inputValue('#f_plaintiff')) === '', 'form opens empty');
+  await old.close();
+
   // phone layout
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   const pp = await phone.newPage();
   await pp.goto(APP); await pp.waitForSelector('#formList .card');
   await pp.screenshot({ path: path.join(OUT, 'phone-home.png') });
   await pp.click('#formList .card'); await pp.waitForSelector('#fields textarea');
-  await pp.click('#btnSample'); await pp.waitForTimeout(200);
+  await fillTest(pp, 'nakal');
   await pp.screenshot({ path: path.join(OUT, 'phone-fill.png') });
   await pp.click('.tabs [data-tab="preview"]'); await pp.waitForTimeout(200);
   await pp.screenshot({ path: path.join(OUT, 'phone-preview.png') });

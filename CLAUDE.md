@@ -21,7 +21,7 @@ Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Fir
 - `js/team.js` — Team screen inside the app at `#/team` (owner/admins only; gate.js starts it): Requests / Approved / Removed (live). Approve sets `members/{uid}.validUntil` to 2099-12-31; Remove sets it to now with `blocked: true`. `admin.html` only redirects to `./#/team`.
 - `firestore.rules` — security. The owner account (email hard-coded in `isOwner()`) is always admin; `admins/{uid}` adds extra admins by hand in console. `users/{uid}` (profile written at sign-in = request), `members/{uid}` (`validUntil`, `blocked`; admin-only writes).
 - `firebase.json`, `firestore.indexes.json` — Firebase Hosting (serves the repo root, ignores docs/tests) and emulator ports.
-- `terms.html`, `privacy.html` — drafts with [placeholders]; the owner must complete them.
+- `terms.html`, `privacy.html` — final Terms of Use and Privacy Policy (owner, chamber, mobile; approval-based access, free for now, data on device, DPDP Act 2023, Jalandhar jurisdiction). Update the "Last updated" date when changing them.
 - `lib/` — bundled so the app needs no CDN: jsPDF 2.x, docx 9.x, Firebase compat SDK 13.1.0 (app, auth, firestore). Do not replace with CDN links.
 - `js/install.js` — "Install the app" card (home) / button (sign-in) via `beforeinstallprompt`; iPhone shows Share → Add to Home Screen steps; hidden when running installed. Also shows the "New version available · Refresh" bar on service-worker `controllerchange`.
 - `manifest.webmanifest`, `sw.js`, `icons/` (the owner's logo — navy & gold court building with "iCourt Forms": logo-512 for the UI, icon-192/512, maskable-512 on navy, apple-touch-icon on white, favicon-48; corners made transparent, 256-colour PNGs) — installable PWA, offline. `sw.js` precaches with `cache: 'reload'` so a new version never stores stale files. `sw.js` never intercepts cross-origin or `/__/` (Firebase) requests.
@@ -32,7 +32,7 @@ Access (owner's choice, like his Madhur Ganga Minerals app): Google sign-in (Fir
 
 ## How a form works (one model → three outputs)
 A form config (`forms/nakal.js` is the reference) has:
-- `id`, `name`, `desc`, `court`, `docTitle`, `sampleLabel`
+- `id`, `name`, `desc`, `court`, `docTitle`
 - `page` — page size in points, portrait (Legal = `{ w: 612, h: 1008 }`)
 - `title` — `{ text, size, top }` (top in points)
 - `grid` — `{ left, top, cols: [...], rows: [...] }` in DXA (1/1440 inch). Every grid square must be covered by exactly one cell.
@@ -42,7 +42,6 @@ A form config (`forms/nakal.js` is the reference) has:
 - `clientCaseMap` — `{ formKey: caseKey }`: which form fields a client's saved case fills (case keys: nature, plaintiff, defendant, claim, place, court, decision)
 - `clientTargets` — `[{ label, map: { formKey: clientKey }, fromForm? }]`: where a client's own details can be filled (client keys: name, father, occupation, address, po, ps, tehsil, district)
 - `setting: true` on a field = an option, not a printed box (not counted in "filled")
-- `sample` — demo data for the "Sample case" button
 - `tr` — `{ hi: { 'English text': 'हिंदी' }, pa: { … } }` for the app screen (name, desc, court, groups, labels, hints, option texts)
 - `build(data)` — returns the cells: `CF.util.cellList()` → `add(col, row, colSpan, rowSpan, paragraphs, { rot, align, valign, border, gap })`; paragraphs are `P(text, size, { bold, strike })`. `rot: true` = vertical text, bottom-to-top.
 - `fileBase(data, orient)` — file name without extension
@@ -52,7 +51,7 @@ The engine lays the cells out once (`layout`) and the three renderers draw from 
 
 ## Adding a new form
 1. Ask the owner for the printed format (photo / scan / Word file). **Never invent a format.**
-2. Copy `forms/nakal.js` to `forms/<id>.js`, set the grid, fields, sample and `build()`.
+2. Copy `forms/nakal.js` to `forms/<id>.js`, set the grid, fields and `build()`, and add made-up test details for it in `TEST_DATA` in `tests/smoke.js` (the app has no sample case — the owner removed it; never use real names).
 3. Add `<script src="forms/<id>.js"></script>` in `index.html` (after `js/engine.js`, before `js/gate.js`) and `./forms/<id>.js` to `FILES` in `sw.js`.
 4. Remove its name from `PLANNED` in `js/app.js` if listed there.
 5. Bump `VERSION` in `sw.js`, run the tests.

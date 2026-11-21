@@ -55,13 +55,13 @@ App **English, हिंदी aur ਪੰਜਾਬੀ** mein chalti hai. Login s
 | `js/gate.js` | Login aur approval ki jaanch |
 | `js/engine.js` | Preview, PDF aur Word banane wala engine |
 | `js/app.js` | Forms ki list, fields, save, export |
-| `forms/nakal.js` | Form Nakal ka format, fields aur sample case |
+| `forms/nakal.js` | Form Nakal ka format aur fields |
 | `css/app.css` | Design |
 | `firestore.rules` | Database ki suraksha: kaun kya padh/likh sakta hai |
 | `firebase.json` | Firebase Hosting aur emulator settings |
 | `.github/workflows/pages.yml` | Har update par app GitHub Pages (github.io) par live karta hai |
 | `.github/workflows/deploy.yml` | Har update par Firebase (database rules + web.app) update karta hai |
-| `terms.html`, `privacy.html` | Terms aur Privacy Policy (**draft**, live se pehle poora karein) |
+| `terms.html`, `privacy.html` | Terms of Use aur Privacy Policy |
 | `lib/` | PDF, Word aur Firebase ki libraries (offline ke liye andar) |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Install aur offline ke liye |
 | `tests/` | Format test aur login/approval ka poora test |

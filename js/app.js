@@ -497,10 +497,6 @@
       await navigator.share({ files: [file], title: form.name });
     }, t('shareFail')));
 
-    $('#btnSample').addEventListener('click', async () => {
-      if (Object.values(data).some(v => String(v || '').trim()) && !(await confirmBox(t('confirmSample', { label: form.sampleLabel })))) return;
-      data = { ...form.sample }; caseId = null; save(); fillInputs(); render(); paintRecent(); paintChip();
-    });
     $('#btnClear').addEventListener('click', async () => {
       if (!(await confirmBox(t('confirmClear')))) return;
       data = {}; caseId = null; save(); fillInputs(); render(); paintRecent(); paintChip();
