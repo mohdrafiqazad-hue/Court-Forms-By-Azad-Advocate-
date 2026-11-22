@@ -147,9 +147,14 @@
     document.querySelectorAll('#plangSeg [data-pl]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pl === plang)));
     $('#formView').classList.toggle('portrait', !land());
     document.querySelectorAll('#orientSeg [data-o]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.o === orient)));
-    const keys = form.fields.filter(f => f.key && !f.setting); // settings (e.g. signature on/off) are not form boxes
-    $('#count').textContent = t('filled', { n: keys.filter(f => String(data[f.key] || '').trim()).length, t: keys.length });
+    $('#count').textContent = t('filled', filled());
   }
+  function filled() {
+    const keys = form.fields.filter(f => f.key && !f.setting); // settings (e.g. signature on/off) are not form boxes
+    return { n: keys.filter(f => String(data[f.key] || '').trim()).length, t: keys.length };
+  }
+  // Owner's usage log (js/activity.js): which form, orientation, printed language, boxes filled — never the details
+  const track = kind => { if (CF.act) { const c = filled(); CF.act.log(kind, [form.id, orient, plang, c.n + '/' + c.t].join(' · ')); } };
 
   function setTab(t) {
     $('#formView').dataset.tab = t;
@@ -529,11 +534,11 @@
     setZoom(false);
     document.querySelectorAll('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => { setTab(b.dataset.tab); window.scrollTo(0, 0); }));
 
-    $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => { remember(); await E.loadFonts(); return saveFile(base() + '.docx', await makeDocx()); }, t('wordFail')));
-    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => { remember(); await E.loadFonts(); return saveFile(base() + '.pdf', makePdf()); }, t('pdfFail')));
+    $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => { track('word'); remember(); await E.loadFonts(); return saveFile(base() + '.docx', await makeDocx()); }, t('wordFail')));
+    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => { track('pdf'); remember(); await E.loadFonts(); return saveFile(base() + '.pdf', makePdf()); }, t('pdfFail')));
     $('#btnShare').hidden = !canShareFiles;
     $('#btnShare').addEventListener('click', e => busy(e.currentTarget, async () => {
-      await E.loadFonts();
+      track('share'); await E.loadFonts();
       const file = new File([makePdf()], base() + '.pdf', { type: 'application/pdf' });
       await navigator.share({ files: [file], title: form.name });
     }, t('shareFail')));
@@ -551,9 +556,13 @@
     route();
   }
 
+  let lastScr = '';
   function route() {
     if (CF.locked) return; // the sign-in / approval gate is showing
     if (!$('#sheet').hidden) closeSheet(); // moving to another screen closes an open sheet
+    const scr = /^#\/team\b/.test(location.hash) ? 'team' : ((location.hash.match(/^#\/f\/([\w-]+)/) || [])[1] || 'home');
+    if (CF.act && scr !== lastScr) CF.act.log('screen', scr);
+    lastScr = scr;
     if (/^#\/team\b/.test(location.hash) && CF.team && CF.team.allowed()) {
       form = null; $('#home').hidden = true; $('#formView').hidden = true; CF.team.show(); return;
     }

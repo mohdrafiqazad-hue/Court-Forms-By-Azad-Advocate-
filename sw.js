@@ -1,9 +1,9 @@
 // Service worker: caches the whole app so it runs fully offline after the first visit.
 // Bump VERSION whenever any file changes, so users get the update.
-const VERSION = 'icf-v7';
+const VERSION = 'icf-v8';
 const FILES = [
   './', './index.html', './css/app.css',
-  './js/config.js', './js/i18n.js', './js/store.js', './js/install.js', './js/engine.js', './js/casetypes.js', './js/team.js', './js/gate.js', './js/app.js', './forms/nakal.js',
+  './js/config.js', './js/i18n.js', './js/store.js', './js/install.js', './js/engine.js', './js/casetypes.js', './js/activity.js', './js/activity-view.js', './js/team.js', './js/gate.js', './js/app.js', './forms/nakal.js',
   './lib/fonts/noto-serif-gurmukhi-400.woff2', './lib/fonts/noto-serif-gurmukhi-700.woff2', './lib/fonts/noto-serif-devanagari-400.woff2', './lib/fonts/noto-serif-devanagari-700.woff2',
   './lib/jspdf.umd.min.js', './lib/docx.min.js',
   './lib/firebase-app-compat.js', './lib/firebase-auth-compat.js', './lib/firebase-firestore-compat.js',

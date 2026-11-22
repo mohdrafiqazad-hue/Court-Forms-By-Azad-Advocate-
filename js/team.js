@@ -13,7 +13,7 @@
   const ms = ts => (ts && ts.toMillis ? ts.toMillis() : 0);
   const t = (k, v) => CF.i18n.t(k, v);
 
-  let db = null, me = null, unsubs = [], users = null, members = null, tab = 'requests', wired = false;
+  let db = null, me = null, unsubs = [], users = null, members = null, tab = 'requests', wired = false, owner = false;
 
   function start(_db, _me) {
     if (db && me && me.uid === _me.uid) return;
@@ -27,12 +27,18 @@
       members = {}; qs.docs.forEach(d => { members[d.id] = d.data(); }); draw();
     }, fail));
     wire();
+    // Activity tab: only for the owner (only the owner may read the usage log)
+    if (CF.actView) CF.actView.check(db, ok => { owner = ok; const b = $('#actTab'); if (b) b.hidden = !ok; if (!ok && tab === 'activity') tab = 'requests'; draw(); });
   }
-  function stop() { unsubs.forEach(u => u()); unsubs = []; db = me = users = members = null; badge(0); }
+  function stop() {
+    unsubs.forEach(u => u()); unsubs = []; db = me = users = members = null; owner = false; badge(0);
+    if (CF.actView) CF.actView.stop();
+    const b = $('#actTab'); if (b) b.hidden = true;
+  }
   const allowed = () => !!db;
 
   function show() { $('#teamView').hidden = false; document.title = 'Team — i Court Forms'; draw(); window.scrollTo(0, 0); }
-  function hide() { $('#teamView').hidden = true; }
+  function hide() { $('#teamView').hidden = true; if (CF.actView) CF.actView.stop(); }
 
   function wire() {
     if (wired) return; wired = true;
@@ -53,6 +59,14 @@
   }
 
   function draw() {
+    if (tab === 'activity' && owner && db && !$('#teamView').hidden) {
+      document.querySelectorAll('#teamTabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === tab)));
+      $('#teamHint').textContent = t('actHint');
+      CF.actView.draw(db, $('#teamList'));
+      if (users && members) badge(users.filter(u => u.uid !== me.uid && stateOf(u) === 'waiting').length);
+      return;
+    }
+    if (CF.actView) CF.actView.stop();
     if (!users || !members) { if (!$('#teamView').hidden) $('#teamList').innerHTML = '<p class="empty">' + esc(t('loading')) + '</p>'; return; }
     const people = users.filter(u => u.uid !== me.uid).map(u => ({ ...u, state: stateOf(u) }));
     const by = s => people.filter(u => u.state === s);

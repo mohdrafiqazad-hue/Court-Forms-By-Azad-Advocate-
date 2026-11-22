@@ -33,12 +33,14 @@
 
   // ------------------------------------------------------------ screens
   function show(id) {
+    if (CF.act && ['gLogin', 'gWait', 'gOffline'].includes(id) && $('#' + id).hidden) CF.act.log('screen', id.slice(1).toLowerCase());
     $('#gate').hidden = false;
     SCREENS.forEach(s => { $('#' + s).hidden = s !== id; });
     if (!CF.locked) { CF.locked = true; if (CF.hideApp) CF.hideApp(); }
     window.scrollTo(0, 0);
   }
   function unlock(m) {
+    if (CF.act) CF.act.who({ ...m, kind: 'member' });
     renderAcct(m);
     if (!CF.locked) return;
     CF.locked = false;
@@ -78,7 +80,7 @@
     auth.getRedirectResult().catch(e => loginError(e));
     auth.onAuthStateChanged(user => {
       stopWatch();
-      if (!user) { writeCache(null); show(navigator.onLine === false ? 'gOffline' : 'gLogin'); return; }
+      if (!user) { if (CF.act) CF.act.who(null); writeCache(null); show(navigator.onLine === false ? 'gOffline' : 'gLogin'); return; }
       const c = readCache();
       if (c && c.uid !== user.uid) { writeCache(null); show('gLoading'); }
       watch(user);
@@ -167,6 +169,7 @@
 
   // ------------------------------------------------------------ waiting screen
   function showWait(me, removed) {
+    if (CF.act) CF.act.who({ ...me, kind: removed ? 'removed' : 'waiting' });
     lastWait = [me, removed];
     paintWait();
     show('gWait');

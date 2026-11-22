@@ -5,6 +5,7 @@ rules_version = '2';
 //   admins/{uid}     optional extra admins, made by hand in the Firebase console (document ID = UID)
 //   users/{uid}      profile the app writes at each sign-in = an access request
 //   members/{uid}    approval (validUntil; blocked when removed); only an admin can write it
+//   activity/{visit} usage log of one visit; written by that visitor, read only by the owner
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
@@ -29,6 +30,28 @@ service cloud.firestore {
     match /members/{uid} {
       allow read: if own(uid) || isAdmin();
       allow write: if isAdmin();
+    }
+
+    // activity/{visit}: usage log (js/activity.js). Each visit adds only to its own document,
+    // as the account it belongs to ('' = not signed in). Only the owner reads it (Team → Activity).
+    function visitOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['uid', 'name', 'email', 'kind', 'device', 'app', 'lang', 'start', 'day', 'last', 'ev'])
+        && d.last == request.time
+        && d.ev is list && d.ev.size() <= 400
+        && d.start is int && d.day is string && d.day.size() == 10
+        && d.device is string && d.device.size() <= 60
+        && d.app in ['installed', 'browser'] && d.lang in ['en', 'hi', 'pa']
+        && d.name is string && d.name.size() <= 100
+        && ((request.auth == null && d.uid == '' && d.email == '' && d.name == '' && d.kind == 'guest')
+          || (signedIn() && d.uid == request.auth.uid && d.email == request.auth.token.email
+              && d.kind in ['member', 'waiting', 'removed']));
+    }
+    match /activity/{visit} {
+      allow read, delete: if isOwner();
+      allow create: if visitOk();
+      allow update: if visitOk() && request.resource.data.uid == resource.data.uid
+        && request.resource.data.start == resource.data.start;
     }
   }
 }

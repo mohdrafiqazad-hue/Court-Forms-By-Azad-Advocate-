@@ -101,6 +101,58 @@ const tryWrite = (page, fn) => page.evaluate(`(async () => { try { await (${fn})
   await ad.page.click(`[data-approve="${uid1}"]`);
   check(await visible(u1.page, '#formView', 10000), 'approve again → app opens again (back on the form they had open)');
 
+  console.log('Activity (usage log, owner only)');
+  // a visitor who does not sign in
+  const g = await open(browser, BASE + '?emulator', { mobile: true });
+  await visible(g.page, '#gLogin');
+  await g.page.click('#gLogin [data-about]'); await g.page.click('[data-sheet-close]');
+  // user 1 types a name and downloads a PDF — the name must never reach the log
+  await u1.page.fill('#f_aName', 'SECRET TYPED NAME');
+  const [dl] = await Promise.all([u1.page.waitForEvent('download', { timeout: 20000 }).catch(() => null), u1.page.click('#btnPdf')]);
+  check(!!dl, 'user 1 downloads a PDF');
+  await u1.page.evaluate(() => CF.act.send()); await g.page.evaluate(() => CF.act.send());
+  await u1.page.waitForTimeout(2500);
+  check(await tryWrite(u1.page, `(db) => db.collection('activity').get()`) === 'permission-denied', 'a user cannot read the log');
+  check(await tryWrite(g.page, `(db) => db.collection('activity').limit(1).get()`) === 'permission-denied', 'a visitor cannot read the log');
+  const fake = extra => `(db, fb) => db.collection('activity').doc('t' + Date.now()).set(Object.assign({ uid: '', name: '', email: '', kind: 'guest', device: 'x', app: 'browser', lang: 'en', start: Date.now(), day: '2026-01-01', last: fb.firestore.FieldValue.serverTimestamp(), ev: [] }, ${extra}))`;
+  const mine = `uid: '${uid1}', name: 'Test Junior', email: 'junior.one@example.com', kind: 'member'`;
+  check(await tryWrite(u1.page, fake(`{ uid: 'someone-else', email: 'junior.one@example.com', kind: 'member' }`)) === 'permission-denied', 'a user cannot write a visit as someone else');
+  check(await tryWrite(g.page, fake(`{ kind: 'member' }`)) === 'permission-denied', 'a visitor cannot pretend to be a member');
+  check(await tryWrite(u1.page, fake(`{ ${mine}, secret: 'x' }`)) === 'permission-denied', 'no extra fields can be stored');
+  check(await tryWrite(u1.page, fake(`{ ${mine} }`)) === 'allowed', 'a user can write their own visit');
+  check(await tryWrite(g.page, fake(`{}`)) === 'allowed', 'a visitor can write a visit');
+
+  check(await ad.page.evaluate(() => localStorage.getItem('icf-act-off')) === '1', "owner's own use is not recorded (also on the owner's device)");
+  const docs = await ad.page.evaluate(async () => (await CF.fb.db.collection('activity').get()).docs.map(d => d.data()));
+  const ownUid = await ad.page.evaluate(() => CF.fb.auth.currentUser.uid);
+  check(docs.length > 0 && !docs.some(d => d.uid === ownUid), 'owner reads the log; no visit of the owner in it');
+  check(!JSON.stringify(docs).includes('SECRET TYPED NAME'), 'nothing typed in a form is in the log');
+  const ev1 = docs.filter(d => d.uid === uid1).flatMap(d => d.ev);
+  check(ev1.some(e => e.e === 'pdf' && /^nakal · \w+ · en · \d+\/\d+$/.test(e.d)), "user 1's PDF download is logged with form, orientation, language and boxes filled");
+  check(ev1.some(e => e.e === 'screen' && e.d === 'nakal') && ev1.some(e => e.e === 'open'), 'opening the app and the form is logged');
+  check(docs.some(d => d.uid === '' && d.kind === 'guest' && d.ev.some(e => e.e === 'tap' && e.d === 'about')), 'a visitor without sign-in is logged (tapped About)');
+
+  await ad.page.click('#teamTabs [data-t="activity"]');
+  await ad.page.waitForSelector('.tiles', { timeout: 8000 }).catch(() => {});
+  check(await ad.page.isVisible('#actTab'), 'owner: Activity tab shows');
+  check((await ad.page.textContent('#teamList')).includes('Test Junior'), 'owner: Activity lists Test Junior under People');
+  await ad.page.click('[data-period="30"]'); await ad.page.waitForSelector('.bars', { timeout: 8000 }).catch(() => {});
+  check(await ad.page.$$eval('.bar', b => b.length) === 1 && (await ad.page.textContent('.bar b')) !== '0', 'owner: visits per day (no empty days before the first visit)');
+  await ad.page.click(`[data-who="${uid1}"]`);
+  await ad.page.click('.act-visit:has-text("PDF") [data-visit], .act-visit:has-text("1 downloads") [data-visit]');
+  await ad.page.waitForSelector('.steps', { timeout: 5000 }).catch(() => {});
+  const steps = await ad.page.textContent('#teamList');
+  check(/Downloaded PDF: Form Nakal/.test(steps), "owner: a visit's steps show the PDF download");
+  await ad.page.screenshot({ path: path.join(OUT, 'team-2-activity.png'), fullPage: true });
+  const ph = await open(browser, BASE + '?emulator', { mobile: true });
+  await visible(ph.page, '#gLogin'); await signIn(ph.page, 'own', OWNER, 'Owner');
+  await visible(ph.page, '#home'); await ph.page.goto(BASE + '?emulator#/team');
+  await ph.page.waitForSelector('#actTab:not([hidden])', { timeout: 8000 }).catch(() => {});
+  await ph.page.click('#teamTabs [data-t="activity"]'); await ph.page.waitForSelector('.tiles', { timeout: 8000 }).catch(() => {});
+  await ph.page.click('[data-period="7"]'); await ph.page.waitForSelector('.bars', { timeout: 8000 }).catch(() => {});
+  check(await ph.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'owner on a phone: Activity fits the screen');
+  await ph.page.screenshot({ path: path.join(OUT, 'team-3-activity-phone.png'), fullPage: true });
+
   await browser.close();
   console.log(fails.length ? `\n${fails.length} check(s) FAILED` : '\nAll checks passed');
   process.exit(fails.length ? 1 : 0);

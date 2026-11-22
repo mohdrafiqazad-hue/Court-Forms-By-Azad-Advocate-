@@ -379,3 +379,34 @@ body.sheet-open { overflow: hidden; }
 .founder .sheet-row .btn { text-decoration: none; display: inline-flex; align-items: center; }
 .about-foot { margin-top: 16px; }
 @media (max-width: 820px) { .founder strong { font-size: 19px; } .founder span { font-size: 16px; } }
+
+/* Team → Activity (owner only) */
+.actseg { margin-bottom: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.tile { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.tile b { font: 700 28px/1.1 Georgia, "Times New Roman", serif; color: var(--accent); }
+.tile span { color: var(--ink); font-size: 13.5px; }
+.tile small { color: var(--muted); font-size: 12.5px; }
+.bars { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
+.bar { display: grid; grid-template-columns: 112px 1fr 34px; align-items: center; gap: 10px; padding: 4px 0; font-size: 13.5px; }
+.bar .bl { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar .bt { height: 14px; display: block; }
+.bar .bt i { display: block; height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+.bar b { text-align: right; font-weight: 600; }
+button.item { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.act-person.on { border-color: var(--accent); box-shadow: 0 0 0 2px #e8eef9; }
+.act-visit { display: block; padding: 0; }
+.act-head { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; padding: 12px 14px; cursor: pointer; border-radius: 14px; }
+.act-head .who { flex: 1 1 220px; min-width: 0; }
+.act-head .who strong { display: block; }
+.act-head .who span { color: var(--muted); font-size: 13px; }
+.steps { list-style: none; margin: 0; padding: 4px 14px 12px; border-top: 1px solid var(--line); }
+.steps li { display: flex; gap: 12px; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #ece6dc; }
+.steps li:last-child { border-bottom: 0; }
+.steps time { flex: none; width: 44px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 820px) {
+  .tile b { font-size: 30px; } .tile span { font-size: 15px; }
+  .bar { grid-template-columns: 96px 1fr 30px; font-size: 14.5px; }
+  .act-head .who strong { font-size: 17px; } .act-head .who span { font-size: 14.5px; }
+  .steps li { font-size: 15.5px; }
+}
