@@ -36,11 +36,12 @@ service cloud.firestore {
     // as the account it belongs to ('' = not signed in). Only the owner reads it (Team → Activity).
     function visitOk() {
       let d = request.resource.data;
-      return d.keys().hasOnly(['uid', 'name', 'email', 'kind', 'device', 'app', 'lang', 'start', 'day', 'last', 'ev'])
+      return d.keys().hasOnly(['uid', 'name', 'email', 'kind', 'device', 'dev', 'app', 'lang', 'start', 'day', 'last', 'ev'])
         && d.last == request.time
         && d.ev is list && d.ev.size() <= 400
         && d.start is int && d.day is string && d.day.size() == 10
         && d.device is string && d.device.size() <= 60
+        && (!('dev' in d) || (d.dev is string && d.dev.size() <= 24))
         && d.app in ['installed', 'browser'] && d.lang in ['en', 'hi', 'pa']
         && d.name is string && d.name.size() <= 100
         && ((request.auth == null && d.uid == '' && d.email == '' && d.name == '' && d.kind == 'guest')

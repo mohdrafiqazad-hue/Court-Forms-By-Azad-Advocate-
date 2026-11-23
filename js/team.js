@@ -62,7 +62,7 @@
     if (tab === 'activity' && owner && db && !$('#teamView').hidden) {
       document.querySelectorAll('#teamTabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === tab)));
       $('#teamHint').textContent = t('actHint');
-      CF.actView.draw(db, $('#teamList'));
+      CF.actView.draw(db, $('#teamList'), { people: users && members ? users.filter(u => u.uid !== me.uid).map(u => ({ uid: u.uid, name: u.name, email: u.email, state: stateOf(u) })) : null });
       if (users && members) badge(users.filter(u => u.uid !== me.uid && stateOf(u) === 'waiting').length);
       return;
     }

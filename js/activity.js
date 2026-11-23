@@ -28,6 +28,8 @@
       : /CriOS|Chrome/.test(u) ? 'Chrome' : /Safari/.test(u) ? 'Safari' : 'Browser';
     return os + ' · ' + br;
   }
+  // A random number for this device (no name), so visitors who do not sign in can be counted once each
+  const devId = (() => { let v = lsGet('icf-dev-v1'); if (!/^[a-z0-9]{8,24}$/.test(v || '')) { v = rid().slice(0, 20); lsSet('icf-dev-v1', v); } return v; })();
   const installed = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 
   // ------------------------------------------------------------ queue (kept on the device until sent)
@@ -75,15 +77,18 @@
       for (const v of Q.s.slice()) {
         if (!v.ev.length) continue;
         if (v.uid !== uid) continue;                          // another account's visit: only that account may send it
+        if ((auth.currentUser ? auth.currentUser.uid : '') !== uid) break; // signed in / out meanwhile
         const batch = v.ev.slice(0, 100);
         const doc = {
           uid, name: me.name, email: uid ? (auth.currentUser.email || '') : '', kind: me.kind,
-          device: device(), app: installed() ? 'installed' : 'browser', lang: (CF.i18n && CF.i18n.lang) || 'en',
+          device: device(), dev: devId, app: installed() ? 'installed' : 'browser', lang: (CF.i18n && CF.i18n.lang) || 'en',
           start: v.start, day: v.day, last: FV.serverTimestamp(), ev: FV.arrayUnion(...batch),
         };
         if (!uid) doc.name = '';
         try {
-          await db.collection('activity').doc(v.sid).set(doc, { merge: true });
+          // a write can hang when the account changes while it is on its way: give up after a while, try again later
+          await Promise.race([db.collection('activity').doc(v.sid).set(doc, { merge: true }),
+            new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 15000))]);
         } catch (e) {
           if (e && e.code === 'permission-denied') console.warn('activity', e.code); else throw e;
         }

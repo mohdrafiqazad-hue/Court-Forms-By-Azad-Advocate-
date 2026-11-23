@@ -110,7 +110,7 @@ const tryWrite = (page, fn) => page.evaluate(`(async () => { try { await (${fn})
   await u1.page.fill('#f_aName', 'SECRET TYPED NAME');
   const [dl] = await Promise.all([u1.page.waitForEvent('download', { timeout: 20000 }).catch(() => null), u1.page.click('#btnPdf')]);
   check(!!dl, 'user 1 downloads a PDF');
-  await u1.page.evaluate(() => CF.act.send()); await g.page.evaluate(() => CF.act.send());
+  await u1.page.evaluate(() => CF.act.send()); await g.page.evaluate(() => CF.act.send()); await u2.page.evaluate(() => CF.act.send());
   await u1.page.waitForTimeout(2500);
   check(await tryWrite(u1.page, `(db) => db.collection('activity').get()`) === 'permission-denied', 'a user cannot read the log');
   check(await tryWrite(g.page, `(db) => db.collection('activity').limit(1).get()`) === 'permission-denied', 'a visitor cannot read the log');
@@ -137,8 +137,17 @@ const tryWrite = (page, fn) => page.evaluate(`(async () => { try { await (${fn})
   check(await ad.page.isVisible('#actTab'), 'owner: Activity tab shows');
   check((await ad.page.textContent('#teamList')).includes('Test Junior'), 'owner: Activity lists Test Junior under People');
   await ad.page.click('[data-period="30"]'); await ad.page.waitForSelector('.bars', { timeout: 8000 }).catch(() => {});
-  check(await ad.page.$$eval('.bar', b => b.length) === 1 && (await ad.page.textContent('.bar b')) !== '0', 'owner: visits per day (no empty days before the first visit)');
+  check(await ad.page.$$eval('.bars.days .bar', b => b.length) === 1 && (await ad.page.textContent('.bars.days .bar b')) !== '0', 'owner: visits per day (no empty days before the first visit)');
+  const fr = await ad.page.textContent('.ftable');
+  check(/Form Nakal/.test(fr) && /1\s*PDF/.test(fr), 'owner: Forms used shows Form Nakal with 1 PDF');
+  const svc = await ad.page.$$eval('.bar.wide', b => b.map(x => x.textContent.replace(/\s+/g, ' ')));
+  check(svc.some(x => /PDF download.*1 people.*1$/.test(x.trim())) && svc.some(x => /About/.test(x)), 'owner: Services used counts the PDF download and About (times and people)');
+  const tiles = await ad.page.$$eval('.tile', b => b.map(x => x.textContent.replace(/\s+/g, ' ').trim()));
+  check(tiles.some(x => /^1\s*Approved members\s*1 used the app/.test(x)), 'owner: approved members tile (1, and 1 used the app)');
+  check(tiles.some(x => /^\d+\s*People who came/.test(x)) && tiles.some(x => /^[1-9]\d*\s*Visitors without sign-in/.test(x)), 'owner: people who came and visitors without sign-in are counted');
+  check(/Approved members · 1/.test(await ad.page.textContent('#teamList')) && /Others who signed in/.test(await ad.page.textContent('#teamList')), 'owner: list of approved members, then others who signed in');
   await ad.page.click(`[data-who="${uid1}"]`);
+  check(/Showing only: Test Junior/.test(await ad.page.textContent('#teamList')), 'owner: tap a member → counts for that member only');
   await ad.page.click('.act-visit:has-text("PDF") [data-visit], .act-visit:has-text("1 downloads") [data-visit]');
   await ad.page.waitForSelector('.steps', { timeout: 5000 }).catch(() => {});
   const steps = await ad.page.textContent('#teamList');
