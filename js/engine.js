@@ -41,6 +41,9 @@
   const FONT_FILES = [
     ['Noto Serif Gurmukhi', 'noto-serif-gurmukhi', 'U+0951-0952,U+0964-0965,U+0A01-0A76,U+200C-200D,U+20B9,U+25CC,U+262C,U+A830-A839'],
     ['Noto Serif Devanagari', 'noto-serif-devanagari', 'U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20A8,U+20B9,U+20F0,U+25CC,U+A830-A839,U+A8E0-A8FF'],
+    // sans pages (js/flow.js: Talbana, List of Documents — Nirmala UI in Word)
+    ['Noto Sans', 'noto-sans', 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD'],
+    ['Noto Sans Gurmukhi', 'noto-sans-gurmukhi', 'U+0951-0952,U+0964-0965,U+0A01-0A76,U+200C-200D,U+20B9,U+25CC,U+262C,U+A830-A839'],
   ];
   const INDIC = /[\u0900-\u0A7F]/;
   let fontsP = null, fontsOk = false;
@@ -60,7 +63,7 @@
     if (!indic) return null;
     return (lang === 'hi' ? [DEV, GUR] : [GUR, DEV]).join(', ') + ', ' + TIMES;
   }
-  const cssFont = (fam, size, bold) => `${bold ? 'bold ' : ''}${size}px ${fam}`;
+  const cssFont = (fam, size, bold, italic) => `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${size}px ${fam}`;
   let curFam = null, ctx2d = null;
 
   let measurer = null;
@@ -146,14 +149,14 @@
   // ------------------------------------------------------------ SVG preview
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   function svg(form, ops, land) {
-    const { A } = geom(form);
+    const A = land ? geom(form).A : 0;
     const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
     const g = land ? `translate(${A},0) rotate(90)` : '';
     let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(form.name)} preview"><rect width="${W}" height="${H}" fill="#fff"/><g transform="${g}" font-family="${esc(ops.fam || TIMES).replace(/"/g, '&quot;')}" fill="#000">`;
     for (const o of ops) {
       if (o.t === 'rect') s += `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="none" stroke="#000" stroke-width="0.5"/>`;
-      else if (o.t === 'line') s += `<line x1="${o.x1}" y1="${o.y1}" x2="${o.x2}" y2="${o.y2}" stroke="#000" stroke-width="${o.wdt}"/>`;
-      else s += `<text x="${o.x}" y="${o.y}" font-size="${o.size}"${o.bold ? ' font-weight="bold"' : ''} xml:space="preserve"${o.angle ? ` transform="rotate(${-o.angle} ${o.x} ${o.y})"` : ''}>${esc(o.text)}</text>`;
+      else if (o.t === 'line') s += `<line x1="${o.x1}" y1="${o.y1}" x2="${o.x2}" y2="${o.y2}" stroke="#000" stroke-width="${o.wdt}"${o.dash ? ` stroke-dasharray="${o.dash.join(' ')}"` : ''}/>`;
+      else s += `<text x="${o.x}" y="${o.y}" font-size="${o.size}"${o.bold ? ' font-weight="bold"' : ''}${o.italic ? ' font-style="italic"' : ''}${o.fam ? ` font-family="${esc(o.fam).replace(/"/g, '&quot;')}"` : ''} xml:space="preserve"${o.angle ? ` transform="rotate(${-o.angle} ${o.x} ${o.y})"` : ''}>${esc(o.text)}</text>`;
     }
     return s + '</g></svg>';
   }
@@ -161,7 +164,7 @@
   // ------------------------------------------------------------ PDF
   // The page drawn on a canvas (same ops, same transform as the preview); scale 4 ≈ 290 dpi
   function canvasPage(form, ops, land, scale) {
-    const { A } = geom(form);
+    const A = land ? geom(form).A : 0;
     const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
     const cv = document.createElement('canvas'); cv.width = Math.round(W * scale); cv.height = Math.round(H * scale);
     const x = cv.getContext('2d');
@@ -170,9 +173,9 @@
     x.fillStyle = '#000'; x.strokeStyle = '#000'; x.textBaseline = 'alphabetic';
     for (const o of ops) {
       if (o.t === 'rect') { x.lineWidth = 0.5; x.strokeRect(o.x, o.y, o.w, o.h); }
-      else if (o.t === 'line') { x.lineWidth = o.wdt; x.beginPath(); x.moveTo(o.x1, o.y1); x.lineTo(o.x2, o.y2); x.stroke(); }
+      else if (o.t === 'line') { x.lineWidth = o.wdt; x.setLineDash(o.dash || []); x.beginPath(); x.moveTo(o.x1, o.y1); x.lineTo(o.x2, o.y2); x.stroke(); x.setLineDash([]); }
       else {
-        x.save(); x.font = cssFont(ops.fam || TIMES, o.size, o.bold); x.translate(o.x, o.y);
+        x.save(); x.font = cssFont(o.fam || ops.fam || TIMES, o.size, o.bold, o.italic); x.translate(o.x, o.y);
         if (o.angle) x.rotate(-o.angle * Math.PI / 180);
         x.fillText(o.text, 0, 0); x.restore();
       }
@@ -181,7 +184,7 @@
   }
 
   function pdf(form, ops, land) {
-    const { A } = geom(form);
+    const A = land ? geom(form).A : 0;
     const doc = new window.jspdf.jsPDF({ unit: 'pt', format: [form.page.w, form.page.h], orientation: land ? 'landscape' : 'portrait' });
     if (ops.fam) { // Punjabi / Hindi: one high-resolution image of the page
       const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
@@ -197,10 +200,13 @@
         doc.setLineWidth(0.5);
         for (let i = 0; i < 4; i++) { const a = pts[i], b = pts[(i + 1) % 4]; doc.line(a[0], a[1], b[0], b[1]); }
       } else if (o.t === 'line') {
-        const a = tp(o.x1, o.y1), b = tp(o.x2, o.y2); doc.setLineWidth(o.wdt); doc.line(a[0], a[1], b[0], b[1]);
+        const a = tp(o.x1, o.y1), b = tp(o.x2, o.y2); doc.setLineWidth(o.wdt);
+        if (o.dash) doc.setLineDashPattern(o.dash, 0);
+        doc.line(a[0], a[1], b[0], b[1]);
+        if (o.dash) doc.setLineDashPattern([], 0);
       } else {
         const [x, y] = tp(o.x, o.y);
-        doc.setFont('times', o.bold ? 'bold' : 'normal'); doc.setFontSize(o.size);
+        doc.setFont('times', o.bold && o.italic ? 'bolditalic' : o.bold ? 'bold' : o.italic ? 'italic' : 'normal'); doc.setFontSize(o.size);
         const angle = o.angle - (land ? 90 : 0);
         doc.text(o.text, x, y, angle ? { angle } : undefined);
       }
@@ -303,5 +309,5 @@
     return D.Packer.toBlob(doc);
   }
 
-  CF.engine = { layout, svg, pdf, docx, loadFonts, fontsReady: () => fontsOk, PRINT_LANGS, canvasPage };
+  CF.engine = { layout, svg, pdf, docx, loadFonts, fontsReady: () => fontsOk, PRINT_LANGS, canvasPage, TIMES, INDIC, cssFont };
 })();

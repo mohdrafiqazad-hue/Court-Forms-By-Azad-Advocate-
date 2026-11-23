@@ -18,6 +18,7 @@
   let plang = 'en'; // language of the printed form: en / pa / hi
   const PL_NAME = { en: 'English', pa: 'ਪੰਜਾਬੀ', hi: 'हिंदी' }, PL_FILE = { pa: 'Punjabi', hi: 'Hindi' };
   const storeKey = f => 'cf-form-' + f.id + '-v1';
+  const langsOf = f => f.printLangs || E.PRINT_LANGS;   // printed-form languages a form has (Talbana: Punjabi only)
   const land = () => orient === 'landscape';
   const S = CF.store;
   const p2 = x => String(x).padStart(2, '0');
@@ -29,6 +30,7 @@
       const s = JSON.parse(localStorage.getItem(storeKey(f)) || 'null');
       if (s) { data = s.data || {}; if (f.orientations.includes(s.orient)) orient = s.orient; caseId = s.caseId || null; if (E.PRINT_LANGS.includes(s.plang)) plang = s.plang; }
     } catch (e) { /* storage unavailable */ }
+    if (!langsOf(f).includes(plang)) plang = langsOf(f)[0];
     if (caseId && !S.cases.get(caseId)) caseId = null; // case was deleted
   }
   const save = () => { try { localStorage.setItem(storeKey(form), JSON.stringify({ data, orient, caseId, plang })); } catch (e) { /* ignore */ } };
@@ -73,8 +75,9 @@
     $('#orientSeg').innerHTML = f.orientations.map(o => `<button type="button" data-o="${o}">${escH(t(o))}</button>`).join('');
     $('#orientSeg').hidden = f.orientations.length < 2;
     $('#plangSeg').setAttribute('aria-label', t('printLang')); $('#plangSeg').title = t('printLang');
-    $('#plangSeg').innerHTML = E.PRINT_LANGS.map(l => `<button type="button" data-pl="${l}" lang="${l}">${escH(PL_NAME[l])}</button>`).join('');
-    const note = t('typeEnglish');
+    $('#plangSeg').innerHTML = langsOf(f).map(l => `<button type="button" data-pl="${l}" lang="${l}">${escH(PL_NAME[l])}</button>`).join('');
+    $('#plangSeg').hidden = langsOf(f).length < 2;
+    const note = langsOf(f).length > 1 ? t('typeEnglish') : '';
     $('#typeEn').textContent = note; $('#typeEn').hidden = !note;
     buildFields(); fillInputs(); render(); paintChip();
   }
@@ -141,14 +144,17 @@
   const schedule = () => { clearTimeout(timer); timer = setTimeout(render, 120); };
   function render() {
     if (!form) return;
-    const ops = E.layout(form, form.build(data, plang), plang);
+    const ops = opsNow();
     if (ops.fam && !E.fontsReady()) E.loadFonts().then(() => render()); // Punjabi / Hindi fonts: draw again once loaded
     $('#paper').innerHTML = E.svg(form, ops, land());
+    $('#count').classList.toggle('warn', !!ops.overflow);
     document.querySelectorAll('#plangSeg [data-pl]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pl === plang)));
     $('#formView').classList.toggle('portrait', !land());
     document.querySelectorAll('#orientSeg [data-o]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.o === orient)));
-    $('#count').textContent = t('filled', filled());
+    $('#count').textContent = t('filled', filled()) + (ops.overflow ? ' · ⚠ ' + t('tooLong') : '');
   }
+  // Drawing of the page: grid forms (engine.js) or forms written like a Word page (flow.js)
+  const opsNow = () => form.flow ? CF.flow.layout(form, data, plang) : E.layout(form, form.build(data, plang), plang);
   function filled() {
     const keys = form.fields.filter(f => f.key && !f.setting); // settings (e.g. signature on/off) are not form boxes
     return { n: keys.filter(f => String(data[f.key] || '').trim()).length, t: keys.length };
@@ -181,9 +187,9 @@
     toast(t('saved', { f: name }));
   }
 
-  const makePdf = () => E.pdf(form, E.layout(form, form.build(data, plang), plang), land());
-  const makeDocx = () => E.docx(form, form.build(data, plang), land(), plang);
-  const base = () => form.fileBase(data, orient) + (PL_FILE[plang] ? '_' + PL_FILE[plang] : '');
+  const makePdf = () => E.pdf(form, opsNow(), land());
+  const makeDocx = () => form.flow ? CF.flow.docx(form, data, plang) : E.docx(form, form.build(data, plang), land(), plang);
+  const base = () => form.fileBase(data, orient) + (PL_FILE[plang] && langsOf(form).length > 1 ? '_' + PL_FILE[plang] : '');
 
   async function busy(btn, fn, failMsg) {
     btn.disabled = true;

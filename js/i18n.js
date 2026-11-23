@@ -209,6 +209,7 @@
     mobile: ['Mobile', 'मोबाइल', 'ਮੋਬਾਈਲ'],
     call: ['Call', 'कॉल करें', 'ਕਾਲ ਕਰੋ'],
     whatsapp: ['WhatsApp', 'WhatsApp', 'WhatsApp'],
+    tooLong: ['Too much text for one page — shorten it', 'एक पेज के लिए लिखा बहुत ज़्यादा है — थोड़ा छोटा करें', 'ਇੱਕ ਪੇਜ ਲਈ ਲਿਖਿਆ ਬਹੁਤ ਜ਼ਿਆਦਾ ਹੈ — ਥੋੜ੍ਹਾ ਛੋਟਾ ਕਰੋ'],
     // Team → Activity (owner only)
     activity: ['Activity', 'गतिविधि', 'ਗਤੀਵਿਧੀ'],
     actHint: ['Only you see this: when the app was opened, by whom, and what was tapped. What people type in forms is never recorded.',

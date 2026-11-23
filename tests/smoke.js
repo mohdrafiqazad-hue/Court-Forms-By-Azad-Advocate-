@@ -26,6 +26,22 @@ const TEST_DATA = {
     aProfession: 'Advocate,\nChamber No. 1,\nDistrict Courts,\nJalandhar',
     aPO: 'Jalandhar', aTehsil: 'Jalandhar', aDistrict: 'Jalandhar',
   },
+  talbana: {
+    court: 'IN THE COURT OF THE CIVIL JUDGE (SENIOR DIVISION), JALANDHAR', plaintiff: 'Asha Rani', defendant: 'Raj Kumar',
+    subject: 'Suit for Permanent Injunction', tDate: '12.11.2026', tBy: "Plaintiff's", tPurpose: 'FOR THE SERVICE OF SUMMONS UPON DEFENDANT',
+    tCount: '1', tFee: 'RS. 25/-', advName: 'Test Advocate', advChamber: 'Chamber No. 1, New Court, Jalandhar', advMobile: '90000-00000',
+  },
+  listdocs: {
+    court: 'IN THE COURT OF CIVIL JUDGE (SENIOR DIVISION), JALANDHAR', plaintiff: 'Asha Rani', defendant: 'Raj Kumar',
+    subject: 'Suit for Permanent Injunction', hearing: '10.01.2027',
+    docs: 'Copy of Aadhaar Card of the plaintiff.\nFard Jamabandi for the year 2020-21 of Village Test, Khasra No. 1//2/3.\nOriginal site plan of the suit property.',
+    advName: 'Test Advocate',
+  },
+  address: {
+    court: 'THE CIVIL JUDGE (SENIOR DIVISION), JALANDHAR', plaintiff: 'Asha Rani', defendant: 'Raj Kumar', suitFor: 'Permanent Injunction', hearing: '10.01.2027',
+    adName: 'Asha Rani W/o Sh. Test Kumar', adCaste: 'Test', adResident: 'House No. 1, Test Colony', adPO: 'Test', adTehsil: 'Jalandhar-1', adDistt: 'Jalandhar',
+    adRemarks: 'Plaintiff.', signName: 'Asha Rani',
+  },
 };
 // fill an input, or pick an option in a list
 const set = async (p, sel, v) => ((await p.$eval(sel, el => el.tagName)) === 'SELECT' ? p.selectOption(sel, v) : p.fill(sel, v));
@@ -91,6 +107,46 @@ const pdfInfo = buf => {
       }
     }
   }
+
+  // Forms written like a Word page: one Legal page in Word and PDF, filled or blank, long lists too
+  console.log('Talbana, List of Documents, Address Form');
+  const dl = async (btn) => { const [d] = await Promise.all([page.waitForEvent('download', { timeout: 20000 }), page.click(btn)]); const f = path.join(OUT, 'x-' + d.suggestedFilename()); await d.saveAs(f); return { name: d.suggestedFilename(), buf: fs.readFileSync(f) }; };
+  for (const id of ['talbana', 'listdocs', 'address']) {
+    await page.goto(APP + '#/f/' + id); await page.waitForSelector('#paper svg');
+    await page.click('#btnClear'); await page.click('#confirm [data-yes]'); await page.waitForTimeout(200);
+    check(await page.isHidden('#orientSeg') && await page.isHidden('#plangSeg'), `${id}: one page format, no orientation or language switch`);
+    const bw = await dl('#btnWord'), bp = await dl('#btnPdf');
+    const bx = zipText(bw.buf, 'word/document.xml'), bi = pdfInfo(bp.buf);
+    check(bi.pages === 1 && Math.round(bi.w) === 612 && Math.round(bi.h) === 1008, `${id}: blank form PDF is one Legal page`);
+    check(/<w:pgSz w:w="12240" w:h="20160"/.test(bx) && !/hRule="atLeast"/.test(bx) && (bx.match(/<w:sectPr/g) || []).length === 1, `${id}: blank form Word is one Legal page with fixed row heights`);
+    const vals = Object.values(TEST_DATA[id]).flatMap(v => v.split('\n')).filter(v => v.length > 3);
+    check(!vals.some(v => bx.includes(v.replace(/&/g, '&amp;').replace(/'/g, '&apos;'))), `${id}: blank form has no particulars`);
+    await fillTest(page, id); await page.waitForTimeout(300);
+    const fw = await dl('#btnWord'), fp = await dl('#btnPdf');
+    const fx = zipText(fw.buf, 'word/document.xml'), fi = pdfInfo(fp.buf);
+    const esc = v => v.replace(/&/g, '&amp;').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
+    const missing = vals.filter(v => !fx.includes(esc(v)) && !fx.includes(esc(v.toUpperCase())));
+    check(fi.pages === 1 && Math.round(fi.w) === 612 && Math.round(fi.h) === 1008 && /^[A-Z][A-Za-z_]+_Asha_Rani_vs_Raj_Kumar\.pdf$/.test(fp.name), `${id}: filled PDF is one Legal page (${fp.name})`);
+    check(!missing.length, `${id}: every particular is in the Word file` + (missing.length ? ': missing ' + missing.join(' | ') : ''));
+    check(!/⚠/.test(await page.textContent('#count')), `${id}: fits on one page (no warning)`);
+    if (id !== 'address') check(/w:ascii="Nirmala UI"/.test(fx) && /ਫ/.test(fx), `${id}: Punjabi headings in Nirmala UI, as in the owner's file`);
+    else check(/w:ascii="Times New Roman"/.test(fx) && /ADDRESS FORM/.test(fx) && fp.buf.toString('latin1').includes('/Times-BoldItalic'), 'address: Times New Roman, "ADDRESS FORM" in bold italics, vector PDF');
+  }
+  // List of Documents: numbers are added, and 30 long documents still make one page
+  await page.goto(APP + '#/f/listdocs'); await page.waitForSelector('#paper svg');
+  check(/>1\.<\/text>/.test(await page.innerHTML('#paper')) && /Copy of Aadhaar Card/.test(await page.innerHTML('#paper')), 'list: documents are numbered 1., 2., …');
+  await page.fill('#f_docs', Array.from({ length: 30 }, (_, i) => `Certified copy of the test document number ${i + 1} dated 01.01.2026 about the suit land, Village Test.`).join('\n'));
+  await page.waitForTimeout(400);
+  const lw = await dl('#btnWord'), lp = await dl('#btnPdf');
+  check(pdfInfo(lp.buf).pages === 1 && !/⚠/.test(await page.textContent('#count')) && /document number 30 /.test(zipText(lw.buf, 'word/document.xml')), 'list: 30 documents still fit on one page (smaller text)');
+  // Address: the top heading can be left out; "Other" in a list prints what is typed
+  await page.goto(APP + '#/f/address'); await page.waitForSelector('#paper svg');
+  await page.selectOption('#f_topHead', 'no'); await page.waitForTimeout(300);
+  check(!/Important Forms/.test(await page.innerHTML('#paper')), 'address: "Important Forms" heading can be left out');
+  await page.selectOption('#f_suitFor', { index: (await page.$$eval('#f_suitFor option', o => o.length)) - 1 });
+  await page.fill('#f_suitFor_own', 'Recovery of Rs. 50,000'); await page.waitForTimeout(400);
+  check(/Recovery of Rs. 50,000/.test(await page.innerHTML('#paper')), 'address: "Other" kind of suit prints what is typed');
+  await page.selectOption('#f_topHead', ''); await page.click('#btnClear'); await page.click('#confirm [data-yes]');
 
   // languages: English / हिंदी / ਪੰਜਾਬੀ
   console.log('Languages');
