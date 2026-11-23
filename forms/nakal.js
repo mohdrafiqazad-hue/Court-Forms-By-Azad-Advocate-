@@ -147,7 +147,7 @@
       'Ordinary': 'ਸਾਧਾਰਨ', 'Urgent': 'ਜ਼ਰੂਰੀ', 'Court Fee': 'ਕੋਰਟ ਫ਼ੀਸ', 'In Person': 'ਖ਼ੁਦ ਆ ਕੇ', 'By Registered Post': 'ਰਜਿਸਟਰਡ ਡਾਕ ਰਾਹੀਂ',
       'Sir, the applicant requests that copy be supplied as per the particulars given in the table below, in accordance with the Rules.':
         'ਸ੍ਰੀਮਾਨ ਜੀ, ਬਿਨੈਕਾਰ ਬੇਨਤੀ ਕਰਦਾ ਹੈ ਕਿ ਹੇਠਾਂ ਦਿੱਤੀ ਸਾਰਣੀ ਦੇ ਵੇਰਵਿਆਂ ਅਨੁਸਾਰ, ਨਿਯਮਾਂ ਮੁਤਾਬਕ ਨਕਲ ਦਿੱਤੀ ਜਾਵੇ।',
-      'No.: 9': 'ਨੰ.: 9', 'be supplied.': 'ਦਿੱਤੀ ਜਾਵੇ।', 'Date:': 'ਮਿਤੀ:', 'Case No.': 'ਕੇਸ ਨੰ.',
+      'No.: 9': 'ਨੰ.: 9', 'be supplied.': 'ਦਿੱਤੀ ਜਾਵੇ।', 'Date:': 'ਮਿਤੀ:', 'Case No.': 'ਕੇਸ ਨੰ.', 'ADVOCATE': 'ਐਡਵੋਕੇਟ', 'M.': 'ਮੋ.',
       'Nature of Case: Civil, Revenue, Criminal, Miscellaneous or Appeal': 'ਕੇਸ ਦੀ ਕਿਸਮ: ਦੀਵਾਨੀ, ਮਾਲ, ਫ਼ੌਜਦਾਰੀ, ਫੁਟਕਲ ਜਾਂ ਅਪੀਲ',
       'Parties': 'ਧਿਰਾਂ', 'Plaintiff or Complainant': 'ਮੁੱਦਈ ਜਾਂ ਸ਼ਿਕਾਇਤਕਰਤਾ', 'Defendant or Accused / Respondent': 'ਮੁਦਾਲਾ ਜਾਂ ਦੋਸ਼ੀ / ਜਵਾਬਦੇਹ',
       'Nature of Claim / Value of Suit or Details of Offence': 'ਦਾਅਵੇ ਦੀ ਕਿਸਮ / ਦਾਅਵੇ ਦੀ ਮਾਲੀਅਤ ਜਾਂ ਜੁਰਮ ਦਾ ਵੇਰਵਾ',
@@ -168,7 +168,7 @@
       'Ordinary': 'साधारण', 'Urgent': 'तत्काल', 'Court Fee': 'कोर्ट फ़ीस', 'In Person': 'स्वयं आकर', 'By Registered Post': 'रजिस्टर्ड डाक द्वारा',
       'Sir, the applicant requests that copy be supplied as per the particulars given in the table below, in accordance with the Rules.':
         'श्रीमान जी, आवेदक निवेदन करता है कि नीचे दी गई तालिका के विवरण के अनुसार, नियमों के मुताबिक नकल दी जाए।',
-      'No.: 9': 'नं.: 9', 'be supplied.': 'दी जाए।', 'Date:': 'दिनांक:', 'Case No.': 'केस नं.',
+      'No.: 9': 'नं.: 9', 'be supplied.': 'दी जाए।', 'Date:': 'दिनांक:', 'Case No.': 'केस नं.', 'ADVOCATE': 'एडवोकेट', 'M.': 'मो.',
       'Nature of Case: Civil, Revenue, Criminal, Miscellaneous or Appeal': 'मुकदमे की किस्म: दीवानी, माल, फ़ौजदारी, विविध या अपील',
       'Parties': 'पक्षकार', 'Plaintiff or Complainant': 'वादी या शिकायतकर्ता', 'Defendant or Accused / Respondent': 'प्रतिवादी या अभियुक्त / उत्तरदाता',
       'Nature of Claim / Value of Suit or Details of Offence': 'दावे की किस्म / दावे की मालियत या अपराध का विवरण',
@@ -225,7 +225,18 @@
     ah.forEach((t, i) => add(acol[i], 6, acol[i] === 3 ? 2 : 1, 1, t.map(x => P(L(x), HEAD)), { valign: 'top' }));
     ['aName', 'aFather', 'aWork', 'aProfession', 'aPO', 'aPS', 'aTehsil', 'aDistrict', 'aScribe']
       .forEach((k, i) => add(acol[i], 7, acol[i] === 3 ? 2 : 1, 1, dat(k), { rot: true }));
+    cells._data = d; // for footer()
     return cells;
+  }
+  // Under the form, on the right (only when filled): the advocate's name, office address and mobile
+  function footer(d, lang = 'en') {
+    const L = s => (PRINT[lang] && PRINT[lang][s]) || s;
+    const v = k => clean(d[k]).replace(/\s*\n\s*/g, ' ').trim();
+    return [
+      { text: v('advName') ? v('advName').toUpperCase() + ', ' + L('ADVOCATE') : '', size: 12, bold: true },
+      { text: v('advChamber'), size: 11, bold: true, italic: true, u: true },
+      { text: v('advMobile') ? L('M.') + ' ' + v('advMobile') : '', size: 11, bold: true, italic: true, u: true },
+    ];
   }
 
   // Case number: type code + number (COMA/55/2024); older free-text natures keep the number they contain
@@ -268,8 +279,9 @@
     grid: { left: 420, top: 2820, cols: Array(10).fill(1140), rows: [886, 763, 634, 3700, 5587, 482, 814, 2563] },
     orientations: ['landscape', 'portrait'],
     defaultOrient: 'landscape',
-    fields: FIELDS,
-    tr: TR,
+    fields: FIELDS.concat(window.CF.formKit.ADVOCATE),
+    tr: window.CF.formKit.withTR(TR),
+    footer,
     // Client book → a client's saved case fills these form fields (case keys: nature, plaintiff, defendant, claim, place, court, decision)
     clientCaseMap: { nature: 'nature', caseNo: 'caseNo', plaintiff: 'plaintiff', defendant: 'defendant', claim: 'claim', village: 'place', court: 'court', decision: 'decision' },
     // Client book: which form fields a saved client's own details fill (client keys: name, father, occupation, address, po, ps, tehsil, district)

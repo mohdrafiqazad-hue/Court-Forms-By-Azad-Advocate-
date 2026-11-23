@@ -1,11 +1,11 @@
 // Service worker: caches the whole app so it runs fully offline after the first visit.
 // Bump VERSION whenever any file changes, so users get the update.
-const VERSION = 'icf-v10';
+const VERSION = 'icf-v11';
 const FILES = [
   './', './index.html', './css/app.css',
-  './js/config.js', './js/i18n.js', './js/store.js', './js/install.js', './js/engine.js', './js/casetypes.js', './js/flow.js', './js/activity.js', './js/activity-view.js', './js/team.js', './js/gate.js', './js/app.js', './forms/nakal.js', './forms/common.js', './forms/talbana.js', './forms/listdocs.js', './forms/address.js',
+  './js/config.js', './js/i18n.js', './js/store.js', './js/install.js', './js/engine.js', './js/casetypes.js', './js/flow.js', './js/activity.js', './js/activity-view.js', './js/team.js', './js/gate.js', './js/app.js', './forms/common.js', './forms/nakal.js', './forms/talbana.js', './forms/listdocs.js', './forms/address.js',
   './lib/fonts/noto-serif-gurmukhi-400.woff2', './lib/fonts/noto-serif-gurmukhi-700.woff2', './lib/fonts/noto-serif-devanagari-400.woff2', './lib/fonts/noto-serif-devanagari-700.woff2',
-  './lib/fonts/noto-sans-400.woff2', './lib/fonts/noto-sans-700.woff2', './lib/fonts/noto-sans-gurmukhi-400.woff2', './lib/fonts/noto-sans-gurmukhi-700.woff2',
+  './lib/fonts/noto-sans-400.woff2', './lib/fonts/noto-sans-700.woff2', './lib/fonts/noto-sans-gurmukhi-400.woff2', './lib/fonts/noto-sans-gurmukhi-700.woff2', './lib/fonts/noto-sans-devanagari-400.woff2', './lib/fonts/noto-sans-devanagari-700.woff2',
   './lib/jspdf.umd.min.js', './lib/docx.min.js',
   './lib/firebase-app-compat.js', './lib/firebase-auth-compat.js', './lib/firebase-firestore-compat.js',
   './terms.html', './privacy.html',

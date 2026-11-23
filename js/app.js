@@ -16,7 +16,7 @@
 
   let form = null, data = {}, orient = 'portrait', caseId = null, pendingCase = null;
   let plang = 'en'; // language of the printed form: en / pa / hi
-  const PL_NAME = { en: 'English', pa: 'ਪੰਜਾਬੀ', hi: 'हिंदी' }, PL_FILE = { pa: 'Punjabi', hi: 'Hindi' };
+  const PL_NAME = { en: 'English', pa: 'ਪੰਜਾਬੀ', hi: 'हिंदी' }, PL_FILE = { en: 'English', pa: 'Punjabi', hi: 'Hindi' };
   const storeKey = f => 'cf-form-' + f.id + '-v1';
   const langsOf = f => f.printLangs || E.PRINT_LANGS;   // printed-form languages a form has (Talbana: Punjabi only)
   const land = () => orient === 'landscape';
@@ -25,7 +25,7 @@
   const fmtDate = ms => { const d = new Date(ms); return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
 
   function load(f) {
-    data = {}; orient = f.defaultOrient || f.orientations[0]; caseId = null; plang = 'en';
+    data = {}; orient = f.defaultOrient || f.orientations[0]; caseId = null; plang = f.defaultLang || 'en';
     try {
       const s = JSON.parse(localStorage.getItem(storeKey(f)) || 'null');
       if (s) { data = s.data || {}; if (f.orientations.includes(s.orient)) orient = s.orient; caseId = s.caseId || null; if (E.PRINT_LANGS.includes(s.plang)) plang = s.plang; }
@@ -189,7 +189,8 @@
 
   const makePdf = () => E.pdf(form, opsNow(), land());
   const makeDocx = () => form.flow ? CF.flow.docx(form, data, plang) : E.docx(form, form.build(data, plang), land(), plang);
-  const base = () => form.fileBase(data, orient) + (PL_FILE[plang] && langsOf(form).length > 1 ? '_' + PL_FILE[plang] : '');
+  // file name: the language is added when it is not the form's own (Nakal: English; Talbana: Punjabi)
+  const base = () => form.fileBase(data, orient) + (plang !== (form.defaultLang || 'en') ? '_' + PL_FILE[plang] : '');
 
   async function busy(btn, fn, failMsg) {
     btn.disabled = true;

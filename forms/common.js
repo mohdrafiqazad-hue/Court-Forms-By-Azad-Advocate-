@@ -18,6 +18,7 @@
 
   // The advocate's own details: saved once in "My details", filled in every form
   const ADVOCATE = [
+    { group: 'Advocate (printed at the bottom)' },
     { key: 'advName', profile: true, label: "Advocate's name", type: 'text', placeholder: 'e.g. R. K. SHARMA', hint: 'Printed in capitals, as on the form' },
     { key: 'advChamber', profile: true, label: 'Chamber address', type: 'text', placeholder: 'e.g. Chamber No. 12, New Court, Jalandhar' },
     { key: 'advMobile', profile: true, label: 'Mobile', type: 'text', placeholder: 'e.g. 98140-00000' },
@@ -45,6 +46,7 @@
       'Mobile': 'मोबाइल',
       'Pick from the list, or choose Other and type it': 'लिस्ट से चुनें, या "दूसरा" चुनकर ख़ुद लिखें',
       'Petitioner': 'याचिकाकर्ता', 'Respondent': 'प्रत्यर्थी', 'Applicant': 'आवेदक',
+      'Advocate (printed at the bottom)': 'वकील (फ़ॉर्म के नीचे छपता है)',
     },
     pa: {
       'District Courts, Jalandhar': 'ਜ਼ਿਲ੍ਹਾ ਅਦਾਲਤ, ਜਲੰਧਰ',
@@ -67,6 +69,7 @@
       'Mobile': 'ਮੋਬਾਈਲ',
       'Pick from the list, or choose Other and type it': 'ਲਿਸਟ ਵਿੱਚੋਂ ਚੁਣੋ, ਜਾਂ "ਹੋਰ" ਚੁਣ ਕੇ ਆਪ ਲਿਖੋ',
       'Petitioner': 'ਪਟੀਸ਼ਨਰ', 'Respondent': 'ਰਿਸਪਾਂਡੈਂਟ', 'Applicant': 'ਬਿਨੈਕਾਰ',
+      'Advocate (printed at the bottom)': 'ਵਕੀਲ (ਫ਼ਾਰਮ ਦੇ ਹੇਠਾਂ ਛਪਦਾ ਹੈ)',
     },
   };
   const withTR = own => ({ hi: Object.assign({}, TR.hi, own.hi), pa: Object.assign({}, TR.pa, own.pa) });
@@ -79,5 +82,12 @@
     return [prefix].concat(p && q ? [p + '_vs_' + q] : (p || q) ? [p || q] : []).join('_').slice(0, 120);
   };
 
-  CF.formKit = { COURTS, SUITS, PARTIES, PARTY_OPTS, opts, ADVOCATE, withTR, caseTitle, fileBase, clean, first };
+  // A party's name on the printed form, in its language
+  const PARTY_PRINT = {
+    pa: { Plaintiff: 'ਮੁੱਦਈ', Defendant: 'ਮੁਦਾਲਾ', Petitioner: 'ਪਟੀਸ਼ਨਰ', Respondent: 'ਰਿਸਪਾਂਡੈਂਟ', Applicant: 'ਬਿਨੈਕਾਰ' },
+    hi: { Plaintiff: 'वादी', Defendant: 'प्रतिवादी', Petitioner: 'याचिकाकर्ता', Respondent: 'प्रत्यर्थी', Applicant: 'आवेदक' },
+  };
+  const partyIn = (p, lang) => (PARTY_PRINT[lang] && PARTY_PRINT[lang][p]) || p;
+
+  CF.formKit = { PARTY_PRINT, partyIn, COURTS, SUITS, PARTIES, PARTY_OPTS, opts, ADVOCATE, withTR, caseTitle, fileBase, clean, first };
 })();

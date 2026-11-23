@@ -25,8 +25,7 @@
 
     { group: 'Signature' },
     { key: 'party', label: 'Filed for', type: 'choice', hint: 'Printed under the signature', options: K.PARTY_OPTS },
-    K.ADVOCATE[0],
-  ];
+  ].concat(K.ADVOCATE);
 
   const TR = K.withTR({
     hi: {
@@ -41,17 +40,37 @@
     },
   });
 
+  // Printed words in the three languages (the owner's form is Punjabi; English / Hindi translated — owner to check).
+  // Table headings: one array item = one line, as on the Punjabi form; English / Hindi wrap by themselves.
+  const TXT = {
+    title: { pa: 'ਫਿਹਿਰਸਤ  ਦਸਤਾਵੇਜ', en: 'LIST OF DOCUMENTS', hi: 'फ़ेहरिस्त दस्तावेज़' },
+    under: { pa: 'ਮੁਜਬ ਆਰਡਰ 7 ਰੂਲ 14 ਤੇ ਆਰਡਰ 13 ਰੂਲ ਜਾਬਤਾ ਦੀਵਾਨੀ', en: 'Under Order 7 Rule 14 and Order 13 Rule 1 of the Code of Civil Procedure', hi: 'मुताबिक़ ऑर्डर 7 रूल 14 व ऑर्डर 13 रूल 1 ज़ाब्ता दीवानी' },
+    court: { pa: 'ਅਦਾਲਤ ', en: '', hi: 'अदालत ' },
+    vs: { pa: 'ਬਨਾਮ', en: 'VERSUS', hi: 'बनाम' },
+    caseL: { pa: 'ਮੁਕਦੱਮਾ ', en: 'Case: ', hi: 'मुक़दमा ' },
+    hearing: { pa: ' ਤਰੀਕ ਪੇਸ਼ੀ: ', en: ' Date of Hearing: ', hi: ' तारीख़ पेशी: ' },
+    filed: { pa: 'ਫਿਹਿਰਸਤ ਮੁਦਲਖਾ', en: 'List of documents produced', hi: 'फ़ेहरिस्त मुदलख़ा' },
+    h1: { pa: ['ਨੰਬਰ'], en: ['No.'], hi: ['नंबर'] },
+    h2: { pa: ['ਦਸਤਾਵੇਜ਼ਾ ਦਾ', 'ਵੇਰਵਾ ਤੇ ਲਿਖਣ', 'ਦੀ ਤਰੀਕ'], en: ['Description and date of the document'], hi: ['दस्तावेज़ का विवरण व लिखने की तारीख़'] },
+    h3: { pa: ['ਦਸਤਾਵੇਜ਼ ਕੀ', 'ਸਿੱਧ ਕਰਦੀਆਂ', 'ਹਨ'], en: ['What the document proves'], hi: ['दस्तावेज़ क्या साबित करते हैं'] },
+    h4: { pa: ['ਜੇ ਦਸਤਾਵੇਜ਼', 'ਮਿਸਲ ਤੇ ਰੱਖੀ', 'ਤਾਂ ਉਸ ਉੱਤੇ', 'ਕੀ ਨੰਬਰ', 'ਪਾਇਆ ਗਿਆ'], en: ['If placed on the file, the number put on it'], hi: ['अगर दस्तावेज़ मिसल पर रखा तो उस पर क्या नंबर डाला गया'] },
+    h5: { pa: ['ਜੇ ਦਸਤਾਵੇਜ਼', 'ਵਾਪਿਸ ਕੀਤੀ', 'ਗਈ ਤਾਂ ਦੂਜੀ', 'ਪਾਰਟੀ ਵਕੀਲ ਨੂੰ', 'ਵਾਪਿਸ ਹੋਇਆ'], en: ['If returned, returned to the other party / counsel'], hi: ['अगर दस्तावेज़ वापस किया गया तो दूसरी पार्टी / वकील को वापस हुआ'] },
+    h6: { pa: ['ਵੇਰਵਾ'], en: ['Remarks'], hi: ['विवरण'] },
+  };
+
   const docsOf = d => K.clean(d.docs).split('\n').map(s => s.replace(/^\s*\d+\s*[.)]\s*/, '').trim()).filter(Boolean).slice(0, MAX_DOCS);
 
   // Word: Legal page, margins top 1080 / left 980 / right 540 twips; table 537·449·1973·1772·1704·2277·1528 twips
   function doc(d, lang, step) {
     const v = k => K.clean(d[k]).trim();
+    const W = k => (lang in TXT[k] ? TXT[k][lang] : TXT[k].pa);
     const party = (v('party') || 'Plaintiff').toUpperCase();
     const docs = docsOf(d);
+    const hsz = lang === 'pa' ? 13.5 : lang === 'hi' ? 12 : 11.5;   // table headings
     const size = [14, 13, 12, 11, 10.5, 10, 9.5][step] || 9;   // document text: 14 pt as on the form, smaller only when needed
     const rowH = [16.5, 16, 15, 14, 13, 12.5, 12][step] || 12;
     const lineH = size * L.serif * ([1.15, 1.1, 1.05, 1, 1, 1, 1][step] || 1);   // 1.15 line spacing as on the form
-    const hd = (lines, o = {}) => lines.map((t, i) => Para([R(t, 13.5, { font: S, b: 1 })], Object.assign({ align: 'center', line: 13.5 * 1.25 }, i ? {} : o)));
+    const hd = k => W(k).map(t => Para([R(t, hsz, { font: S, b: 1 })], { align: 'center', line: hsz * 1.25 }));
     const dot = { t: 'none', l: 'none', r: 'none', b: 'dotted' }, none = { t: 'none', l: 'none', r: 'none', b: 'none' };
     const rows = [];
     const docRow = (i, t) => ({ h: rowH, cells: [
@@ -64,29 +83,29 @@
     return {
       page: { w: 612, h: 1008 }, margin: { top: 40, left: 49, right: 27, bottom: 14 },
       blocks: [
-        Para([R('ਫਿਹਿਰਸਤ  ਦਸਤਾਵੇਜ', 24, { font: S, b: 1 })], { align: 'center', line: 30 }),
-        Para([R('ਮੁਜਬ ਆਰਡਰ 7 ਰੂਲ 14 ਤੇ ਆਰਡਰ 13 ਰੂਲ ਜਾਬਤਾ ਦੀਵਾਨੀ', 16, { font: S, b: 1 })], { align: 'center', before: 8, line: 16 * L.sans * 1.6 }),
-        Para([R('ਅਦਾਲਤ ', 16, { font: S }), R(v('court'), 16, { b: 1, u: v('court') ? 'single' : null })], { align: 'center', line: 16 * L.serif * 2 }),
+        Para([R(W('title'), 24, { font: S, b: 1 })], { align: 'center', line: 30 }),
+        Para([R(W('under'), lang === 'en' ? 14 : 16, { font: S, b: 1 })], { align: 'center', before: 8, line: 16 * L.sans * 1.6 }),
+        Para([R(W('court'), 16, { font: S }), R(v('court'), 16, { b: 1, u: v('court') ? 'single' : null })], { align: 'center', line: 16 * L.serif * 2 }),
         // parties over two dotted lines, "ਬਨਾਮ" between them
         { table: true, indent: 30, cols: [206.7, 46, 202], border: 0.5, rows: [{ h: 24, cells: [
           { paras: [Para([R(v('plaintiff'), 14, { font: S, b: 1 })], { align: 'center', line: 14 * L.sans })], sides: dot, valign: 'bottom', pad: { l: 0, r: 0, t: 0, b: 1 } },
-          { paras: [Para([R('ਬਨਾਮ', 13, { font: S, b: 1 })], { align: 'center', line: 13 * L.sans })], sides: none, valign: 'bottom', pad: { l: 0, r: 0, t: 0, b: 1 } },
+          { paras: [Para([R(W('vs'), lang === 'en' ? 11 : 13, { font: S, b: 1 })], { align: 'center', line: 13 * L.sans })], sides: none, valign: 'bottom', pad: { l: 0, r: 0, t: 0, b: 1 } },
           { paras: [Para([R(v('defendant'), 14, { font: S, b: 1 })], { align: 'center', line: 14 * L.sans })], sides: dot, valign: 'bottom', pad: { l: 0, r: 0, t: 0, b: 1 } },
         ] }] },
-        Para([R('ਮੁਕਦੱਮਾ ', 14, { font: S, b: 1 }), R(v('subject') ? v('subject') + '  ' : '\t\t', 14, { font: S, b: 1, u: v('subject') ? 'single' : null }),
-          R(' ਤਰੀਕ ਪੇਸ਼ੀ: ', 14, { font: S, b: 1 }), R(v('hearing'), 14, { font: S, b: 1 })], { before: 4, line: 14 * L.sans * 1.15 }),
-        Para([R('ਫਿਹਿਰਸਤ ਮੁਦਲਖਾ', 10.5, { font: S, b: 1 })], { align: 'center', before: 6, line: 10.5 * L.sans * 1.15, after: 3 }),
+        Para([R(W('caseL'), 14, { font: S, b: 1 }), R(v('subject') ? v('subject') + '  ' : '\t\t', 14, { font: S, b: 1, u: v('subject') ? 'single' : null }),
+          R(W('hearing'), 14, { font: S, b: 1 }), R(v('hearing'), 14, { font: S, b: 1 })], { before: 4, line: 14 * L.sans * 1.15 }),
+        Para([R(W('filed'), 10.5, { font: S, b: 1 })], { align: 'center', before: 6, line: 10.5 * L.sans * 1.15, after: 3 }),
         {
           table: true, indent: 2.85, border: 1.5, cols: [26.85, 22.45, 98.65, 88.6, 85.2, 113.85, 76.4],
           fillTo: 905, fillRow: docRow(0, ''),
           rows: [
             { h: 78.35, cells: [
-              { span: 2, paras: hd(['ਨੰਬਰ']), valign: 'center', pad: { l: 0, r: 0 } },
-              { paras: hd(['ਦਸਤਾਵੇਜ਼ਾ ਦਾ', 'ਵੇਰਵਾ ਤੇ ਲਿਖਣ', 'ਦੀ ਤਰੀਕ']), valign: 'center', pad: { l: 0, r: 0 } },
-              { paras: hd(['ਦਸਤਾਵੇਜ਼ ਕੀ', 'ਸਿੱਧ ਕਰਦੀਆਂ', 'ਹਨ']), valign: 'center', pad: { l: 0, r: 0 } },
-              { paras: hd(['ਜੇ ਦਸਤਾਵੇਜ਼', 'ਮਿਸਲ ਤੇ ਰੱਖੀ', 'ਤਾਂ ਉਸ ਉੱਤੇ', 'ਕੀ ਨੰਬਰ', 'ਪਾਇਆ ਗਿਆ']), valign: 'center', pad: { l: 0, r: 0 } },
-              { paras: hd(['ਜੇ ਦਸਤਾਵੇਜ਼', 'ਵਾਪਿਸ ਕੀਤੀ', 'ਗਈ ਤਾਂ ਦੂਜੀ', 'ਪਾਰਟੀ ਵਕੀਲ ਨੂੰ', 'ਵਾਪਿਸ ਹੋਇਆ']), valign: 'center', pad: { l: 0, r: 0 } },
-              { paras: hd(['ਵੇਰਵਾ']), valign: 'center', pad: { l: 0, r: 0 } },
+              { span: 2, paras: hd('h1'), valign: 'center', pad: { l: 1, r: 1 } },
+              { paras: hd('h2'), valign: 'center', pad: { l: 2, r: 2 } },
+              { paras: hd('h3'), valign: 'center', pad: { l: 2, r: 2 } },
+              { paras: hd('h4'), valign: 'center', pad: { l: 2, r: 2 } },
+              { paras: hd('h5'), valign: 'center', pad: { l: 2, r: 2 } },
+              { paras: hd('h6'), valign: 'center', pad: { l: 2, r: 2 } },
             ] },
             { h: 5.25, cells: [{ span: 7, paras: [], pad: { l: 0, r: 0, t: 0, b: 0 } }] },
             { h: 31.35, cells: [
@@ -99,6 +118,9 @@
               Para([R('', 6)], { line: 10 }),
               Para([R(v('advName').toUpperCase(), 18, { b: 1 })], { align: 'right', line: 18 * L.serif * 1.5 }),
               Para([R(v('advName') ? 'ADVOCATE' : '', 18, { b: 1 })], { align: 'right', line: 18 * L.serif * 1.5 }),
+              // the advocate's office address and mobile (printed when filled)
+              ...(v('advChamber') ? [Para([R(v('advChamber'), 12, { b: 1, i: 1, u: 'single' })], { align: 'right', line: 12 * L.serif * 1.4 })] : []),
+              ...(v('advMobile') ? [Para([R('M. ' + v('advMobile'), 12, { b: 1, i: 1, u: 'single' })], { align: 'right', line: 12 * L.serif * 1.4 })] : []),
             ] }] },
           ]),
         },
@@ -115,7 +137,7 @@
     flow: true, fitSteps: 7,
     page: { w: 612, h: 1008 },
     orientations: ['portrait'], defaultOrient: 'portrait',
-    printLangs: ['pa'],
+    defaultLang: 'pa',                                 // the owner's form is in Punjabi; English and Hindi too
     fields: FIELDS,
     tr: TR,
     clientCaseMap: { plaintiff: 'plaintiff', defendant: 'defendant' },

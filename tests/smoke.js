@@ -114,7 +114,9 @@ const pdfInfo = buf => {
   for (const id of ['talbana', 'listdocs', 'address']) {
     await page.goto(APP + '#/f/' + id); await page.waitForSelector('#paper svg');
     await page.click('#btnClear'); await page.click('#confirm [data-yes]'); await page.waitForTimeout(200);
-    check(await page.isHidden('#orientSeg') && await page.isHidden('#plangSeg'), `${id}: one page format, no orientation or language switch`);
+    const own = id === 'address' ? 'en' : 'pa';
+    check(await page.isHidden('#orientSeg') && await page.isVisible('#plangSeg') && (await page.getAttribute(`#plangSeg [data-pl="${own}"]`, 'aria-pressed')) === 'true',
+      `${id}: portrait only; English / ਪੰਜਾਬੀ / हिंदी, the form's own language (${own}) first`);
     const bw = await dl('#btnWord'), bp = await dl('#btnPdf');
     const bx = zipText(bw.buf, 'word/document.xml'), bi = pdfInfo(bp.buf);
     check(bi.pages === 1 && Math.round(bi.w) === 612 && Math.round(bi.h) === 1008, `${id}: blank form PDF is one Legal page`);
@@ -132,6 +134,38 @@ const pdfInfo = buf => {
     if (id !== 'address') check(/w:ascii="Nirmala UI"/.test(fx) && /ਫ/.test(fx), `${id}: Punjabi headings in Nirmala UI, as in the owner's file`);
     else check(/w:ascii="Times New Roman"/.test(fx) && /ADDRESS FORM/.test(fx) && fp.buf.toString('latin1').includes('/Times-BoldItalic'), 'address: Times New Roman, "ADDRESS FORM" in bold italics, vector PDF');
   }
+  // Every page-style form in English, Punjabi and Hindi: one Legal page, its title in that language, advocate's details
+  const TITLES = { talbana: { en: 'FARD TALBANA', pa: 'ਫ਼ਰਦ ਤਲਬਾਨਾ', hi: 'फ़र्द तलबाना' }, listdocs: { en: 'LIST OF DOCUMENTS', pa: 'ਫਿਹਿਰਸਤ', hi: 'फ़ेहरिस्त दस्तावेज़' }, address: { en: 'ADDRESS FORM', pa: 'ਪਤੇ ਦਾ ਫ਼ਾਰਮ', hi: 'पते का फ़ॉर्म' } };
+  for (const id of Object.keys(TITLES)) {
+    await page.goto(APP + '#/f/' + id); await page.waitForSelector('#paper svg');
+    for (const k of ['advName', 'advChamber', 'advMobile']) await page.fill('#f_' + k, TEST_DATA.talbana[k]);
+    for (const l of ['en', 'pa', 'hi']) {
+      await page.click(`#plangSeg [data-pl="${l}"]`); await page.waitForTimeout(400);
+      const w = await dl('#btnWord'), pp = await dl('#btnPdf');
+      const x = zipText(w.buf, 'word/document.xml'), i = pdfInfo(pp.buf);
+      check(i.pages === 1 && Math.round(i.w) === 612 && Math.round(i.h) === 1008 && x.includes(TITLES[id][l]) && x.includes('TEST ADVOCATE') && x.includes('Chamber No. 1, New Court') && x.includes('90000-00000'),
+        `${id} in ${l}: one Legal page, title "${TITLES[id][l]}", advocate's name, office and mobile (${pp.name})`);
+    }
+    await page.click(`#plangSeg [data-pl="${id === 'address' ? 'en' : 'pa'}"]`);
+  }
+
+  // Form Nakal: the advocate's lines under the form (only when filled), still one page in both orientations and languages
+  await page.goto(APP + '#/f/nakal'); await page.waitForSelector('#paper svg');
+  await page.click('#btnClear'); await page.click('#confirm [data-yes]'); await fillTest(page, 'nakal');
+  check(!/ADVOCATE/.test(await page.innerHTML('#paper')), 'nakal: nothing under the form while the advocate is not filled');
+  for (const k of ['advName', 'advChamber', 'advMobile']) await page.fill('#f_' + k, TEST_DATA.talbana[k]);
+  await page.waitForTimeout(300);
+  for (const o of ['landscape', 'portrait']) for (const l of ['en', 'pa', 'hi']) {
+    await page.click(`#orientSeg [data-o="${o}"]`); await page.click(`#plangSeg [data-pl="${l}"]`); await page.waitForTimeout(300);
+    const w = await dl('#btnWord'), pp = await dl('#btnPdf');
+    const x = zipText(w.buf, 'word/document.xml'), i = pdfInfo(pp.buf);
+    const [ew, eh] = o === 'landscape' ? [1008, 612] : [612, 1008];
+    check(i.pages === 1 && Math.round(i.w) === ew && Math.round(i.h) === eh && x.includes('TEST ADVOCATE') && x.includes('90000-00000') && /<w:pgSz/.test(x),
+      `nakal ${o} ${l}: advocate's lines printed, one page`);
+  }
+  await page.click('#orientSeg [data-o="landscape"]'); await page.click('#plangSeg [data-pl="en"]');
+  for (const k of ['advName', 'advChamber', 'advMobile']) await page.fill('#f_' + k, '');
+
   // List of Documents: numbers are added, and 30 long documents still make one page
   await page.goto(APP + '#/f/listdocs'); await page.waitForSelector('#paper svg');
   check(/>1\.<\/text>/.test(await page.innerHTML('#paper')) && /Copy of Aadhaar Card/.test(await page.innerHTML('#paper')), 'list: documents are numbered 1., 2., …');

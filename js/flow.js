@@ -14,7 +14,7 @@
   const CF = window.CF, E = CF.engine;
   const FAM = {
     serif: "'Times New Roman', Times, 'Liberation Serif', 'Noto Serif Gurmukhi', 'Noto Serif Devanagari', serif",
-    sans: "'Noto Sans', 'Noto Sans Gurmukhi', 'Noto Serif Devanagari', sans-serif",
+    sans: "'Noto Sans', 'Noto Sans Gurmukhi', 'Noto Sans Devanagari', sans-serif",
   };
   const WORD = { serif: 'Times New Roman', sans: 'Nirmala UI' };
   const LINE = { serif: 1.15, sans: 1.33 };   // single line height ÷ font size (Times New Roman, Nirmala UI)
@@ -31,7 +31,10 @@
     ctx.font = E.cssFont(FAM[r.font || 'serif'], r.size, r.b, r.i);
     return ctx.measureText(text).width;
   }
-  const lineOf = p => p.line || Math.max(...p.runs.map(r => r.size * LINE[r.font || 'serif']), 8) * (p.mult || 1);
+  // Punjabi / Hindi letters are taller: never less than this line height, so Word does not cut them off
+  const INDIC_MIN = { serif: 1.4, sans: 1.22 };
+  const lineOf = p => Math.max(p.line || Math.max(...p.runs.map(r => r.size * LINE[r.font || 'serif']), 8) * (p.mult || 1),
+    ...p.runs.filter(r => E.INDIC.test(r.text || '')).map(r => r.size * INDIC_MIN[r.font || 'serif']));
 
   // ------------------------------------------------------------ paragraph → lines
   function tokens(runs) {
@@ -198,7 +201,9 @@
     const D = window.docx;
     const AL = { left: D.AlignmentType.LEFT, center: D.AlignmentType.CENTER, right: D.AlignmentType.RIGHT, both: D.AlignmentType.JUSTIFIED };
     const run = r => {
-      const font = WORD[r.font || 'serif'];
+      const t = r.text || '';
+      // Punjabi / Hindi in a serif text: Raavi / Mangal (Windows); sans: Nirmala UI has both
+      const font = (r.font || 'serif') === 'serif' && /[\u0A00-\u0A7F]/.test(t) ? 'Raavi' : (r.font || 'serif') === 'serif' && /[\u0900-\u097F]/.test(t) ? 'Mangal' : WORD[r.font || 'serif'];
       const parts = String(r.text == null ? '' : r.text).split(/(\t|\n)/).filter(s => s !== '');
       const kids = []; parts.forEach(s => { if (s === '\t') kids.push(new D.Tab()); else if (s === '\n') kids.push(new D.CarriageReturn()); else kids.push(s); });
       return new D.TextRun({

@@ -44,6 +44,7 @@
     // sans pages (js/flow.js: Talbana, List of Documents — Nirmala UI in Word)
     ['Noto Sans', 'noto-sans', 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD'],
     ['Noto Sans Gurmukhi', 'noto-sans-gurmukhi', 'U+0951-0952,U+0964-0965,U+0A01-0A76,U+200C-200D,U+20B9,U+25CC,U+262C,U+A830-A839'],
+    ['Noto Sans Devanagari', 'noto-sans-devanagari', 'U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20A8,U+20B9,U+20F0,U+25CC,U+A830-A839,U+A8E0-A8FF'],
   ];
   const INDIC = /[\u0900-\u0A7F]/;
   let fontsP = null, fontsOk = false;
@@ -58,8 +59,8 @@
     return (fontsP = Promise.all(all).then(() => { fontsOk = true; }, () => { fontsOk = true; }));
   }
   // Font family for a page: null = Times / vector PDF; otherwise the Noto fonts first (they only cover their script)
-  function familyFor(lang, cells, title) {
-    const indic = lang !== 'en' || INDIC.test(title) || cells.some(c => c.paras.some(p => INDIC.test(p.text)));
+  function familyFor(lang, cells, title, extra = []) {
+    const indic = lang !== 'en' || INDIC.test(title) || cells.some(c => c.paras.some(p => INDIC.test(p.text))) || extra.some(l => INDIC.test(l.text));
     if (!indic) return null;
     return (lang === 'hi' ? [DEV, GUR] : [GUR, DEV]).join(', ') + ', ' + TIMES;
   }
@@ -104,12 +105,15 @@
 
   // ------------------------------------------------------------ layout → drawing ops (portrait coords)
   // ops: rect {x,y,w,h} · text {x,y,text,size,bold,angle} · line {x1,y1,x2,y2,wdt}
+  const FOOT_GAP = 8;
+  // form.footer(data, lang) → [{ text, size, bold, italic, u }]; the cells carry the data as cells._data
+  const footerOf = (form, cells, lang) => (form.footer && cells._data ? form.footer(cells._data, lang) : []).filter(l => l.text);
   const titleOf = (form, lang) => (form.title.tr && form.title.tr[lang]) || form.title.text;
   function layout(form, cells, lang = 'en') {
     const { colX, rowY } = geom(form);
     const ops = [];
     const T = form.title, title = titleOf(form, lang);
-    ops.fam = curFam = familyFor(lang, cells, title); ops.lang = lang;
+    ops.fam = curFam = familyFor(lang, cells, title, footerOf(form, cells, lang)); ops.lang = lang;
     const ttw = measure(title, T.size, true);
     ops.push({ t: 'text', x: form.page.w / 2 - ttw / 2, y: T.top + T.size * 0.8, text: title, size: T.size, bold: true, angle: 0 });
 
@@ -140,6 +144,19 @@
           if (l.strike && l.text) ops.push({ t: 'line', x1: tx - l.size * 0.3, y1: ty + 1, x2: tx - l.size * 0.3, y2: ty - tw - 1, wdt: 1.2 });
         }
         off += lh;
+      }
+    }
+    // Optional lines under the form, on the right (form.footer: the advocate's name, office, mobile)
+    const foot = footerOf(form, cells, lang);
+    if (foot.length) {
+      const right = pt(colX[colX.length - 1]);
+      let y = pt(rowY[rowY.length - 1]) + FOOT_GAP;
+      for (const l of foot) {
+        const lh = l.size * (INDIC.test(l.text) ? 1.45 : 1.2), tw = measure(l.text, l.size, l.bold);
+        const by = y + lh * 0.78;
+        ops.push({ t: 'text', x: right - tw, y: by, text: l.text, size: l.size, bold: l.bold, italic: l.italic, angle: 0 });
+        if (l.u) ops.push({ t: 'line', x1: right - tw, y1: by + l.size * 0.14, x2: right, y2: by + l.size * 0.14, wdt: Math.max(0.6, l.size * 0.055) });
+        y += lh;
       }
     }
     curFam = null;
@@ -237,13 +254,21 @@
     const fontOf = text => /[\u0A00-\u0A7F]/.test(text) ? { ascii: FONT, hAnsi: FONT, cs: 'Raavi' }
       : /[\u0900-\u097F]/.test(text) ? { ascii: FONT, hAnsi: FONT, cs: 'Mangal' } : FONT;
     const title = titleOf(form, lang);
-    const indic = !!familyFor(lang, cells, title);
+    const foot = footerOf(form, cells, lang);
+    const indic = !!familyFor(lang, cells, title, foot);
     const para = (p, o) => new D.Paragraph({
-      alignment: o.align === 'left' ? D.AlignmentType.LEFT : D.AlignmentType.CENTER,
+      alignment: o.align === 'left' ? D.AlignmentType.LEFT : o.align === 'right' ? D.AlignmentType.RIGHT : D.AlignmentType.CENTER,
       // Punjabi / Hindi fonts have tall lines in Word: fixed line height so every row keeps its printed size
       spacing: indic ? { before: o.before || 0, after: 0, line: Math.round(p.size * 1.25 * 20), lineRule: D.LineRuleType.EXACT } : { before: o.before || 0, after: 0, line: 240 },
-      children: [new D.TextRun({ text: p.text, font: fontOf(p.text), size: Math.round(p.size * 2), bold: p.bold, strike: p.strike })],
+      children: [new D.TextRun({ text: p.text, font: fontOf(p.text), size: Math.round(p.size * 2), bold: p.bold, strike: p.strike, italics: !!p.italic, underline: p.u ? { type: D.UnderlineType.SINGLE } : undefined })],
     });
+    // footer lines: exact line heights (as in the preview), right aligned
+    const footLine = l => Math.round(l.size * (INDIC.test(l.text) ? 1.45 : 1.2) * 20);
+    const footPara = (l, i) => new D.Paragraph({
+      alignment: D.AlignmentType.RIGHT, spacing: { before: i ? 0 : FOOT_GAP * 20, after: 0, line: footLine(l), lineRule: D.LineRuleType.EXACT },
+      children: [new D.TextRun({ text: l.text, font: fontOf(l.text), size: Math.round(l.size * 2), bold: l.bold, italics: !!l.italic, underline: l.u ? { type: D.UnderlineType.SINGLE } : undefined })],
+    });
+    const footW = foot.length ? foot.reduce((a, l) => a + footLine(l), 0) + FOOT_GAP * 20 + 120 : 0;
 
     // Grid for the chosen orientation
     const pCols = g.cols.length, pRows = g.rows.length;
@@ -253,11 +278,17 @@
       place = c => ({ c: c.c, r: c.r, cs: c.cs, rs: c.rs, dir: c.rot ? 'btlr' : 'h' });
     } else {
       // columns: portrait rows (last..first) then a title column; rows: portrait columns
-      nCols = pRows + 1; nRows = pCols; colW = g.rows.slice().reverse().concat([cfg.titleCol]); rowH = g.cols.slice();
-      place = c => ({ c: pRows - 1 - (c.r + c.rs - 1), r: c.c, cs: c.rs, rs: c.cs, dir: c.rot ? 'h' : 'tbrl' });
+      // footer lines (under the form in portrait) become a column on the left, read top to bottom
+      const off = foot.length ? 1 : 0;
+      nCols = pRows + 1 + off; nRows = pCols; colW = (off ? [footW] : []).concat(g.rows.slice().reverse(), [cfg.titleCol]); rowH = g.cols.slice();
+      place = c => ({ c: off + pRows - 1 - (c.r + c.rs - 1), r: c.c, cs: c.rs, rs: c.cs, dir: c.rot ? 'h' : 'tbrl' });
     }
     const items = cells.map(c => ({ ...place(c), cell: c }));
-    if (land) items.push({ c: pRows, r: 0, cs: 1, rs: pCols, dir: 'tbrl', cell: { paras: [P(title, form.title.size, { bold: true })], align: 'center', valign: 'center', border: false, gap: 0 } });
+    if (land) {
+      const off = foot.length ? 1 : 0;
+      items.push({ c: pRows + off, r: 0, cs: 1, rs: pCols, dir: 'tbrl', cell: { paras: [P(title, form.title.size, { bold: true })], align: 'center', valign: 'center', border: false, gap: 0 } });
+      if (off) items.push({ c: 0, r: 0, cs: 1, rs: pCols, dir: 'tbrl', cell: { paras: foot.map(l => Object.assign(P(l.text, l.size, { bold: l.bold }), { italic: l.italic, u: l.u })), align: 'right', valign: 'top', border: false, gap: 0 } });
+    }
 
     const owner = [];
     for (let r = 0; r < nRows; r++) owner.push(Array(nCols).fill(null));
@@ -294,8 +325,9 @@
 
     let page, children;
     if (!land) {
-      page = { size: { width: pageW, height: pageH }, margin: { ...cfg.portraitMargin, left: g.left, right: pageW - g.left - total } };
-      children = [new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: cfg.titleAfter }, children: [new D.TextRun({ text: title, font: fontOf(title), size: form.title.size * 2, bold: true })] }), table, tail];
+      // with lines under the form, a smaller bottom margin so they stay on the page
+      page = { size: { width: pageW, height: pageH }, margin: { ...cfg.portraitMargin, ...(foot.length ? { bottom: 300, footer: 200 } : {}), left: g.left, right: pageW - g.left - total } };
+      children = [new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: cfg.titleAfter }, children: [new D.TextRun({ text: title, font: fontOf(title), size: form.title.size * 2, bold: true })] }), table].concat(foot.map(footPara), [tail]);
     } else {
       const side = Math.floor((pageH - total) / 2);
       page = { size: { width: pageW, height: pageH, orientation: D.PageOrientation.LANDSCAPE }, margin: { ...cfg.landMargin, left: side, right: pageH - total - side } };
