@@ -176,19 +176,29 @@
   }
 
   const INDIC = E.INDIC;
-  const textsOf = doc => doc.blocks.flatMap(b => b.p ? b.runs : b.rows.flatMap(r => r.cells.flatMap(c => (c.paras || []).flatMap(p => p.runs))));
+  const blocksOf = doc => doc.pages ? doc.pages.flat() : doc.blocks;
+  const textsOf = doc => blocksOf(doc).flatMap(b => b.p ? b.runs : b.rows.flatMap(r => r.cells.flatMap(c => (c.paras || []).flatMap(p => p.runs))));
   // Lay the form out on one page: ask the form for smaller text (step 1, 2, …) while it does not fit
+  // Several pages (doc.pages = [blocks, blocks, …], form.multiPage): each page is fitted by itself —
+  // only a page that is too full gets smaller text (doc(data, lang, steps) with steps[i] for page i).
   function fit(form, data, lang) {
-    let doc, ops;
-    for (let step = 0; step <= (form.fitSteps || 0); step++) {
-      doc = form.doc(data, lang, step);
-      const runs = textsOf(doc);
-      vector = runs.every(r => (r.font || 'serif') === 'serif' && !INDIC.test(r.text || ''));
-      ops = place(doc);
-      ops.fam = vector ? null : FAM.sans; ops.lang = lang;
-      if (ops.bottom <= doc.page.h - doc.margin.bottom) break;
+    const max = form.fitSteps || 0;
+    let steps = [0], doc, list;
+    for (let guard = 0; guard < 80; guard++) {
+      vector = lang === 'en';                     // measuring while the form is built (e.g. text beside a box)
+      doc = form.doc(data, lang, form.multiPage ? steps.slice() : steps[0]);
+      const pages = doc.pages || [doc.blocks];
+      steps = pages.map((_, i) => steps[i] || 0);
+      vector = textsOf(doc).every(r => (r.font || 'serif') === 'serif' && !INDIC.test(r.text || ''));
+      list = pages.map(blocks => place({ page: doc.page, margin: doc.margin, blocks }));
+      let again = false;
+      list.forEach((o, i) => { if (o.bottom > doc.page.h - doc.margin.bottom && steps[i] < max) { steps[i]++; again = true; } });
+      if (!again) break;
     }
-    ops.overflow = ops.bottom > doc.page.h - doc.margin.bottom + 0.5;
+    list.forEach(o => { o.fam = vector ? null : FAM.sans; o.lang = lang; o.overflow = o.bottom > doc.page.h - doc.margin.bottom + 0.5; });
+    const ops = list[0];
+    if (list.length > 1) ops.pages = list;
+    ops.overflow = list.some(o => o.overflow);
     vector = true;
     return { doc, ops };
   }
@@ -222,7 +232,10 @@
     const border = (k, wdt) => k === 'none' ? { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' }
       : { style: k === 'dotted' ? D.BorderStyle.DOTTED : D.BorderStyle.SINGLE, size: k === 'dotted' ? 12 : Math.max(2, Math.round(wdt * 8)), color: '000000' };
     const children = [];
-    for (const b of doc.blocks) {
+    (doc.pages || [doc.blocks]).forEach((blocks, pi) => {
+    // a new sheet for every page after the first (a 1-point paragraph that starts on a new page)
+    if (pi) children.push(new D.Paragraph({ pageBreakBefore: true, spacing: { before: 0, after: 0, line: 20, lineRule: D.LineRuleType.EXACT }, children: [new D.TextRun({ text: '', size: 2 })] }));
+    for (const b of blocks) {
       if (b.p) { children.push(para(b)); continue; }
       if (b.before >= 1) children.push(new D.Paragraph({ spacing: { before: 0, after: 0, line: tw(b.before), lineRule: D.LineRuleType.EXACT }, children: [new D.TextRun({ text: '', size: 2 })] }));
       const rows = b.rows.map(row => new D.TableRow({
@@ -245,6 +258,7 @@
       }));
     }
     // Word needs a paragraph after a table: a 1-point one, so it never makes a second page
+    });
     children.push(new D.Paragraph({ spacing: { before: 0, after: 0, line: 20, lineRule: D.LineRuleType.EXACT }, children: [new D.TextRun({ text: '', size: 2 })] }));
     const m = doc.margin;
     const file = new D.Document({
@@ -266,5 +280,21 @@
     return r.size;
   }
 
-  CF.flow = { layout, fit, docx, R, Para, LINE, fitSize };
+  // Split a paragraph after its first n lines at a width (text beside a box, then the full width below it)
+  function splitLines(runs, width, n, o = {}) {
+    const lines = wrapPara(Object.assign({ p: true, runs }, o), width);
+    let words = lines.slice(0, n).reduce((a, l) => a + l.items.filter(i => i.k === 'w').length, 0);
+    const first = [], rest = [];
+    let into = first;
+    for (const tk of tokens(runs)) {
+      if (into === first && tk.k === 'w') { if (words <= 0) into = rest; else words--; }
+      if (into === rest && !rest.length && tk.k === 'sp') continue;
+      const last = into[into.length - 1];
+      if (last && last.src === tk.r) last.text += tk.s; else into.push(Object.assign({}, tk.r, { text: tk.s, src: tk.r }));
+    }
+    const strip = a => a.map(r => { const c = Object.assign({}, r); delete c.src; return c; });
+    return [strip(first), strip(rest), lines.length];
+  }
+
+  CF.flow = { layout, fit, docx, R, Para, LINE, fitSize, splitLines };
 })();

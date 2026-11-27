@@ -425,3 +425,4 @@ button.item { width: 100%; font: inherit; color: inherit; text-align: left; curs
 .actseg { display: flex; width: 100%; max-width: 460px; }
 .actseg button { flex: 1; white-space: nowrap; padding-left: 6px; padding-right: 6px; }
 #count.warn { color: #a3261a; font-weight: 600; }
+#paper svg + svg { margin-top: 18px; }

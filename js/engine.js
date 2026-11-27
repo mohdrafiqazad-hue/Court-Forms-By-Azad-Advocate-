@@ -166,6 +166,7 @@
   // ------------------------------------------------------------ SVG preview
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   function svg(form, ops, land) {
+    if (ops.pages) return sheets(ops).map(o => svg(form, o, land)).join('');   // several sheets
     const A = land ? geom(form).A : 0;
     const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
     const g = land ? `translate(${A},0) rotate(90)` : '';
@@ -200,37 +201,42 @@
     return cv;
   }
 
+  // the sheets of a multi-page form (ops.pages; the first sheet is ops itself)
+  const sheets = ops => (ops.pages || [ops]).map(o => { const c = Object.assign([], o); delete c.pages; return c; });
   function pdf(form, ops, land) {
     const A = land ? geom(form).A : 0;
+    const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
     const doc = new window.jspdf.jsPDF({ unit: 'pt', format: [form.page.w, form.page.h], orientation: land ? 'landscape' : 'portrait' });
-    if (ops.fam) { // Punjabi / Hindi: one high-resolution image of the page
-      const W = land ? form.page.h : form.page.w, H = land ? form.page.w : form.page.h;
-      doc.addImage(canvasPage(form, ops, land, 4), 'PNG', 0, 0, W, H, undefined, 'FAST');
-      doc.setProperties({ title: form.docTitle || form.name });
-      return doc.output('blob');
-    }
-    doc.setLineWidth(0.5); doc.setDrawColor(0);
     const tp = (x, y) => land ? [A - y, x] : [x, y];
-    for (const o of ops) {
-      if (o.t === 'rect') {
-        const pts = [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]].map(p => tp(p[0], p[1]));
-        doc.setLineWidth(0.5);
-        for (let i = 0; i < 4; i++) { const a = pts[i], b = pts[(i + 1) % 4]; doc.line(a[0], a[1], b[0], b[1]); }
-      } else if (o.t === 'line') {
-        const a = tp(o.x1, o.y1), b = tp(o.x2, o.y2); doc.setLineWidth(o.wdt);
-        if (o.dash) doc.setLineDashPattern(o.dash, 0);
-        doc.line(a[0], a[1], b[0], b[1]);
-        if (o.dash) doc.setLineDashPattern([], 0);
-      } else {
-        const [x, y] = tp(o.x, o.y);
-        doc.setFont('times', o.bold && o.italic ? 'bolditalic' : o.bold ? 'bold' : o.italic ? 'italic' : 'normal'); doc.setFontSize(o.size);
-        const angle = o.angle - (land ? 90 : 0);
-        doc.text(o.text, x, y, angle ? { angle } : undefined);
+    sheets(ops).forEach((page, i) => {
+      if (i) doc.addPage([form.page.w, form.page.h], land ? 'landscape' : 'portrait');
+      if (page.fam) { // Punjabi / Hindi / sans: one high-resolution image of the page
+        doc.addImage(canvasPage(form, page, land, 4), 'PNG', 0, 0, W, H, undefined, 'FAST');
+        return;
       }
-    }
+      doc.setLineWidth(0.5); doc.setDrawColor(0);
+      for (const o of page) {
+        if (o.t === 'rect') {
+          const pts = [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]].map(p => tp(p[0], p[1]));
+          doc.setLineWidth(0.5);
+          for (let k = 0; k < 4; k++) { const a = pts[k], b = pts[(k + 1) % 4]; doc.line(a[0], a[1], b[0], b[1]); }
+        } else if (o.t === 'line') {
+          const a = tp(o.x1, o.y1), b = tp(o.x2, o.y2); doc.setLineWidth(o.wdt);
+          if (o.dash) doc.setLineDashPattern(o.dash, 0);
+          doc.line(a[0], a[1], b[0], b[1]);
+          if (o.dash) doc.setLineDashPattern([], 0);
+        } else {
+          const [x, y] = tp(o.x, o.y);
+          doc.setFont('times', o.bold && o.italic ? 'bolditalic' : o.bold ? 'bold' : o.italic ? 'italic' : 'normal'); doc.setFontSize(o.size);
+          const angle = o.angle - (land ? 90 : 0);
+          doc.text(o.text, x, y, angle ? { angle } : undefined);
+        }
+      }
+    });
     doc.setProperties({ title: form.docTitle || form.name });
     return doc.output('blob');
   }
+
 
   // ------------------------------------------------------------ Word
   const DOCX_DEFAULTS = {

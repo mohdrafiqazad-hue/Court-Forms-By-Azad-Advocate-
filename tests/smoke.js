@@ -42,6 +42,15 @@ const TEST_DATA = {
     adName: 'Asha Rani W/o Sh. Test Kumar', adCaste: 'Test', adResident: 'House No. 1, Test Colony', adPO: 'Test', adTehsil: 'Jalandhar-1', adDistt: 'Jalandhar',
     adRemarks: 'Plaintiff.', signName: 'Asha Rani',
   },
+  bail: {
+    judgeName: 'Sh. Test Kumar', judgeDesig: 'CHIEF JUDICIAL MAGISTRATE, JALANDHAR', firNo: '12', firDate: '01.02.2025', ps: 'Test Nagar',
+    psDistrict: 'District Jalandhar (Rural)', sections: 'Under Section 22 of NDPS Act, 1985', accName: 'Asha Rani', accRel: 'wife of', accFather: 'Sh. Raj Kumar',
+    accAge: '40', accAddress: 'Ward No. 1, Village Test, District Test', amount: 'Rs. 50,000/-', bondDate: '19.11.2026',
+    surName: 'Test Singh', surFather: 'Sohan Singh', surAge: '45', surAddress: 'Main Road, Test Nagar, District Jalandhar', surMobile: '90000-00001',
+    surAadhaar: '0000 0000 0001', surDob: '01.01.1980', witName: 'Gopal Das', witFather: 'Hari Das', witAddress: 'Ward No. 2, Village Test',
+    witMobile: '90000-00002', witAadhaar: '0000 0000 0002', witDob: '01.01.1990', jbAmount: '2,00,000/-', jbLand: 'Land 3 Marle (Share 1/10)',
+    jbDetails: 'Khewat No. 10, out of total Rakba 5 Kanal 0 Marla,\nSituated at Village Test, Tehsil Test', verDate: '19.11.2026', verPlace: 'Jalandhar',
+  },
 };
 // fill an input, or pick an option in a list
 const set = async (p, sel, v) => ((await p.$eval(sel, el => el.tagName)) === 'SELECT' ? p.selectOption(sel, v) : p.fill(sel, v));
@@ -100,7 +109,8 @@ const pdfInfo = buf => {
         if (ext === 'pdf') {
           const i = pdfInfo(buf);
           const [ew, eh] = land ? [f.page.h, f.page.w] : [f.page.w, f.page.h];
-          check(i.pages === 1 && Math.round(i.w) === ew && Math.round(i.h) === eh, `${o} PDF: ${i.pages} page, ${i.w}×${i.h} (${path.basename(file)})`);
+          const sheets = await page.$$eval('#paper svg', s => s.length);   // as many pages as the preview shows (Bail Bonds: 4)
+          check(i.pages === sheets && Math.round(i.w) === ew && Math.round(i.h) === eh, `${o} PDF: ${i.pages} page, ${i.w}×${i.h} (${path.basename(file)})`);
         } else {
           check(buf.slice(0, 2).toString() === 'PK' && buf.length > 3000, `${o} Word: ${buf.length} bytes (${path.basename(file)})`);
         }
@@ -165,6 +175,37 @@ const pdfInfo = buf => {
   }
   await page.click('#orientSeg [data-o="landscape"]'); await page.click('#plangSeg [data-pl="en"]');
   for (const k of ['advName', 'advChamber', 'advMobile']) await page.fill('#f_' + k, '');
+
+  // Bail Bonds: 4 pages (Bail Bond, Surety Bond, Affidavit, Bail Bond), each on its own sheet in every language
+  console.log('Bail Bonds');
+  await page.goto(APP + '#/f/bail'); await page.waitForSelector('#paper svg');
+  await page.click('#btnClear'); await page.click('#confirm [data-yes]'); await page.waitForTimeout(200);
+  {
+    const bw = await dl('#btnWord'), bp = await dl('#btnPdf'), bx = zipText(bw.buf, 'word/document.xml');
+    check(pdfInfo(bp.buf).pages === 4 && (bx.match(/<w:pageBreakBefore\/>/g) || []).length === 3 && !bx.includes('Asha Rani'), 'bail: blank form is 4 pages (PDF and Word), no particulars');
+    await fillTest(page, 'bail'); await page.waitForTimeout(300);
+    for (const l of ['en', 'pa', 'hi']) {
+      await page.click(`#plangSeg [data-pl="${l}"]`); await page.waitForTimeout(400);
+      const w = await dl('#btnWord'), pp = await dl('#btnPdf'), x = zipText(w.buf, 'word/document.xml'), i = pdfInfo(pp.buf);
+      const title = { en: 'SURETY BOND', pa: 'ਜ਼ਾਮਨੀ ਬਾਂਡ', hi: 'ज़मानतदार बांड' }[l];
+      check(i.pages === 4 && Math.round(i.w) === 612 && Math.round(i.h) === 1008 && (x.match(/<w:pageBreakBefore\/>/g) || []).length === 3 && x.includes(title)
+        && ['Asha Rani', 'Test Singh', 'Gopal Das', '0000 0000 0001', '2,00,000/-', 'SH. TEST KUMAR'].every(t => x.includes(t)) && !/⚠/.test(await page.textContent('#count')),
+        `bail in ${l}: 4 Legal pages, particulars in Word, "${title}" (${pp.name})`);
+    }
+    await page.click('#plangSeg [data-pl="en"]');
+    const fonts = zipText((await dl('#btnWord')).buf, 'word/document.xml');
+    check(/w:ascii="Times New Roman"/.test(fonts) && !/Nirmala|Arial|Calibri/.test(fonts) && /<w:sz w:val="28"\/>/.test(fonts) && /<w:sz w:val="32"\/>/.test(fonts),
+      'bail: Times New Roman, 14 pt text and 16 pt court heading as in the file');
+    // much more text: the full page gets smaller text, still 4 pages, nothing outside the page
+    await page.fill('#f_surAddress', 'House No. 1, near the canal bridge and the grain market, '.repeat(8));
+    await page.fill('#f_accAddress', 'Ward No. 1, near the old water tank and the government school, opposite the bus stand, '.repeat(6));
+    await page.waitForTimeout(400);
+    const lp = await dl('#btnPdf'), lw = zipText((await dl('#btnWord')).buf, 'word/document.xml');
+    check(pdfInfo(lp.buf).pages === 4 && !/⚠/.test(await page.textContent('#count')) && /<w:sz w:val="2[0-7]"\/>/.test(lw), 'bail: long addresses → smaller text on those pages, still 4 pages');
+    await page.selectOption('#f_copies', '1'); await page.waitForTimeout(300);
+    check(pdfInfo((await dl('#btnPdf')).buf).pages === 3 && (await page.$$eval('#paper svg', s => s.length)) === 3, 'bail: "One Bail Bond page" makes 3 pages');
+    await page.click('#btnClear'); await page.click('#confirm [data-yes]');
+  }
 
   // List of Documents: numbers are added, and 30 long documents still make one page
   await page.goto(APP + '#/f/listdocs'); await page.waitForSelector('#paper svg');
