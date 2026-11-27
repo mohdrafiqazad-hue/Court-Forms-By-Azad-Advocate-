@@ -223,59 +223,33 @@ const pdfInfo = buf => {
     await page.click('#btnClear'); await page.click('#confirm [data-yes]');
   }
 
-  // Aadhaar card → form (made-up test cards in tests/fixtures), and the surety's photo
-  console.log('Aadhaar and photo');
+  // The surety's photo (camera / gallery) in the Surety Bond box; age or date of birth
+  console.log('Photo, age or date of birth');
   {
-    const FX = path.join(__dirname, 'fixtures');
+    const img = path.join(OUT, 'test-photo.png');
     await page.goto(APP + '#/f/bail'); await page.waitForSelector('#paper svg');
     await page.click('#btnClear'); await page.click('#confirm [data-yes]');
-    check(await page.$$eval('[data-aadhaar]', x => x.length) === 3, 'bail: "Fill from Aadhaar card" for accused, surety and witness');
-    const readCard = async (i, files) => {
-      await page.click(`[data-aadhaar="${i}"]`);
-      const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-aad-pick="gal"]')]);
-      await fc.setFiles(files.map(f => path.join(FX, f)));
-      await page.waitForSelector('[data-aad-fill]', { timeout: 180000 }).catch(() => {});
-      const ok = !!(await page.$('[data-aad-fill]'));
-      if (ok) await page.click('[data-aad-fill]'); else await page.click('[data-sheet-close]');
-      await page.waitForTimeout(300);
-      return ok;
-    };
-    const val = k => page.$eval('#f_' + k, e => e.value);
-    check(await readCard(1, ['aadhaar-test-front.png', 'aadhaar-test-back.jpg']) && await val('surName') === 'Test Kumar' && await val('surFather') === 'Ram Lal'
-      && await val('surRel') === '' && await val('surDob') === '15.08.1985' && await val('surAadhaar') === '2345 6789 0124' && /Model Town.*Tehsil Jalandhar-1.*144001/.test(await val('surAddress')) && /^\d+$/.test(await val('surAge')),
-      'aadhaar: secure QR (photo of the back) + printed number → surety name, S/O, DOB, age, address, Aadhaar No.');
-    check(await readCard(2, ['aadhaar-test-oldqr.png']) && await val('witName') === 'Old Card Singh' && await val('witRel') === 'wife of' && await val('witFather') === 'Test Singh' && await val('witAadhaar') === '2345 6789 0124',
-      'aadhaar: old XML QR → witness name, W/O, husband, Aadhaar No.');
-    check(await page.evaluate(() => CF.capture.verhoeff('234567890124') && !CF.capture.verhoeff('234567890123')), 'aadhaar: number check digit (Verhoeff)');
-    // other ID cards (made up): PAN, Voter ID (front + back), Driving Licence, Passport (machine-readable lines), Aadhaar photo taken sideways
-    const IDS = [
-      [['test-id-pan.png'], { surName: 'Harpreet Kaur', surDob: '05.03.1992' }, /^Gurde/],
-      [['test-id-voter.png', 'test-id-voter-back.png'], { surName: 'Balwinder Kumar', surFather: 'Jagdish Ram', surRel: '', surDob: '12.07.1978' }, null, /Basti Test.*144002/],
-      [['test-id-dl.png'], { surName: 'Simran Arora', surFather: 'Rakesh Arora', surRel: 'daughter of', surDob: '21.11.1995' }, null, /Model Town.*144003/],
-      [['test-id-passport.png'], { surName: 'Anil Kumar Sharma', surDob: '14.01.1980' }],
-      [['test-id-aadhaar-sideways.jpg'], { surName: 'Test Kumar', surDob: '15.08.1985', surAadhaar: '2345 6789 0124' }],
-    ];
-    for (const [files, want, father, addr] of IDS) {
-      await page.click('#btnClear'); await page.click('#confirm [data-yes]');
-      const ok = await readCard(1, files);
-      const got = {}; for (const k of Object.keys(want)) got[k] = await val(k);
-      check(ok && Object.entries(want).every(([k, x]) => got[k] === x) && (!father || father.test(await val('surFather'))) && (!addr || addr.test(await val('surAddress'))),
-        `ID card read from the photo: ${files.join(' + ')}` + (ok ? '' : ' (not read)') + ' ' + JSON.stringify(got));
-    }
-    await page.click('#btnClear'); await page.click('#confirm [data-yes]');
-    check(await readCard(1, ['aadhaar-test-front.png', 'aadhaar-test-back.jpg']), 'aadhaar again after other cards');
+    check(!(await page.$('[data-aadhaar]')), 'no "fill from ID card" button (removed at the owner\'s request)');
+    await page.screenshot({ path: img, clip: { x: 0, y: 0, width: 300, height: 360 } });
     const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-photo="surPhoto"] [data-photo-gal]')]);
-    await fc.setFiles(path.join(FX, 'aadhaar-test-front.png')); await page.waitForTimeout(800);
+    await fc.setFiles(img); await page.waitForTimeout(800);
     const pp = await dl('#btnPdf'), ww = await dl('#btnWord');
     check(pdfInfo(pp.buf).pages === 4 && pp.buf.toString('latin1').includes('/Subtype /Image') && /<pic:pic/.test(zipText(ww.buf, 'word/document.xml')) && (await page.$$eval('#paper image', x => x.length)) === 1,
       "bail: surety's photo in the box (preview, PDF, Word), still 4 pages");
     await page.click('[data-photo="surPhoto"] [data-photo-del]'); await page.waitForTimeout(300);
     check(!(await page.$$eval('#paper image', x => x.length)), 'bail: photo can be removed');
-    await page.goto(APP + '#/f/address'); await page.waitForSelector('#paper svg');
-    check(await readCard(0, ['aadhaar-test-back.jpg']) && /^Test Kumar S\/o Ram Lal$/.test(await val('adName')) && await val('adPO') === 'Model Town' && await val('adTehsil') === 'Jalandhar-1' && await val('adDistt') === 'Jalandhar',
-      'address form: Aadhaar fills name S/o father, post office, tehsil, district');
+    const words = async () => zipText((await dl('#btnWord')).buf, 'word/document.xml').replace(/<[^>]+>/g, '');
+    await page.fill('#f_accName', 'Asha Rani'); await page.fill('#f_accAge', '40'); await page.waitForTimeout(300);
+    check((await words()).includes('Asha Rani son of'), 'bail: age only → "aged about 40 years"') ;
+    check((await words()).includes('aged about 40 years'), 'bail: the age is printed');
+    await page.fill('#f_accAge', ''); await page.fill('#f_accDob', '01.02.1985'); await page.waitForTimeout(300);
+    let w = await words();
+    check(/Asha Rani son of _+, born on 01\.02\.1985, resident of/.test(w), 'bail: no age → the date of birth is printed instead');
+    await page.fill('#f_accAge', '40'); await page.waitForTimeout(300); w = await words();
+    check(w.includes('aged about 40 years, born on 01.02.1985'), 'bail: both age and date of birth');
+    await page.fill('#f_witAge', '35'); await page.waitForTimeout(300); w = await words();
+    check(w.includes('Age: 35 years'), "bail: witness table shows the age when the date of birth is not known");
     await page.click('#btnClear'); await page.click('#confirm [data-yes]');
-    await page.goto(APP + '#/f/bail'); await page.click('#btnClear'); await page.click('#confirm [data-yes]');
   }
 
   // List of Documents: numbers are added, and 30 long documents still make one page

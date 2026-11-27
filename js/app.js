@@ -93,9 +93,6 @@
     for (const f of form.fields) {
       if (f.group) {
         html += `<h3>${escH(ft(form, f.group))}</h3>`;
-        // "Fill from Aadhaar" for a person's group (js/capture.js)
-        const ai = (form.aadhaarTargets || []).findIndex(a => a.group === f.group);
-        if (ai >= 0) html += `<button type="button" class="btn sm aadbtn" data-aadhaar="${ai}">📷 ${escH(t('aadhaarBtn'))}</button>`;
         continue;
       }
       const id = 'f_' + f.key;

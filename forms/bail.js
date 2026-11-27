@@ -27,7 +27,8 @@
     { key: 'accName', label: "Accused's name", type: 'text' },
     { key: 'accRel', label: 'Relation', type: 'choice', options: REL },
     { key: 'accFather', label: "Father's / husband's name", type: 'text', placeholder: 'e.g. Sh. Ram Lal' },
-    { key: 'accAge', label: 'Age (years)', type: 'text' },
+    { key: 'accAge', label: 'Age (years)', type: 'text', hint: 'Not known? Fill the date of birth below (or both)' },
+    { key: 'accDob', label: 'Date of birth', type: 'text', placeholder: 'DD.MM.YYYY' },
     { key: 'accAddress', label: 'Resident of (full address)', type: 'area', rows: 2 },
     { key: 'amount', label: 'Bond amount', type: 'text', placeholder: 'e.g. Rs. 50,000/-' },
     { key: 'bondDate', label: 'Date of the bonds', type: 'text', placeholder: 'DD.MM.YYYY', today: true },
@@ -36,11 +37,11 @@
     { key: 'surName', label: "Surety's name", type: 'text' },
     { key: 'surRel', label: 'Relation', type: 'choice', options: REL },
     { key: 'surFather', label: "Father's / husband's name", type: 'text' },
-    { key: 'surAge', label: 'Age (years)', type: 'text' },
+    { key: 'surAge', label: 'Age (years)', type: 'text', hint: 'Not known? Fill the date of birth below (or both)' },
+    { key: 'surDob', label: 'Date of birth', type: 'text', placeholder: 'DD.MM.YYYY' },
     { key: 'surAddress', label: 'Resident of (full address)', type: 'area', rows: 2 },
     { key: 'surMobile', label: 'Mobile', type: 'text' },
     { key: 'surAadhaar', label: 'Aadhaar No.', type: 'text' },
-    { key: 'surDob', label: 'Date of birth', type: 'text', placeholder: 'DD.MM.YYYY' },
     { key: 'surPhoto', label: "Surety's photo (in the box on the Surety Bond)", type: 'photo', box: [114.6, 140.5], hint: 'Optional — the box stays empty without it' },
 
     { group: 'Witness' },
@@ -50,6 +51,7 @@
     { key: 'witAddress', label: 'Resident of (full address)', type: 'area', rows: 2 },
     { key: 'witMobile', label: 'Mobile', type: 'text' },
     { key: 'witAadhaar', label: 'Aadhaar No.', type: 'text' },
+    { key: 'witAge', label: 'Age (years)', type: 'text', hint: 'Not known? Fill the date of birth below (or both)' },
     { key: 'witDob', label: 'Date of birth', type: 'text', placeholder: 'DD.MM.YYYY' },
 
     { group: 'Affidavit of the surety (security)' },
@@ -75,7 +77,7 @@
       'District (of the police station)': 'ज़िला (थाने का)', 'Select the district': 'ज़िला चुनें', 'Sections and Act': 'धाराएँ और एक्ट',
       'Accused (Bail Bond)': 'अभियुक्त (ज़मानत बांड)', "Accused's name": 'अभियुक्त का नाम', 'Relation': 'रिश्ता',
       'son of': 'पुत्र', 'daughter of': 'पुत्री', 'wife of': 'पत्नी', "Father's / husband's name": 'पिता / पति का नाम',
-      'Age (years)': 'उम्र (साल)', 'Resident of (full address)': 'निवासी (पूरा पता)', 'Bond amount': 'बांड की रकम', 'Date of the bonds': 'बांड की तारीख़',
+      'Age (years)': 'उम्र (साल)', 'Not known? Fill the date of birth below (or both)': 'पता नहीं? नीचे जन्म तिथि भरें (या दोनों)', 'Resident of (full address)': 'निवासी (पूरा पता)', 'Bond amount': 'बांड की रकम', 'Date of the bonds': 'बांड की तारीख़',
       "Surety's photo (in the box on the Surety Bond)": 'ज़मानतदार की फ़ोटो (ज़मानतदार बांड के खाने में)', 'Optional — the box stays empty without it': 'ज़रूरी नहीं — न लगाएँ तो खाना ख़ाली रहेगा',
       'Surety': 'ज़मानतदार', "Surety's name": 'ज़मानतदार का नाम', 'Aadhaar No.': 'आधार नं.', 'Date of birth': 'जन्म तिथि',
       'Witness': 'गवाह', "Witness's name": 'गवाह का नाम',
@@ -94,7 +96,7 @@
       'District (of the police station)': 'ਜ਼ਿਲ੍ਹਾ (ਥਾਣੇ ਦਾ)', 'Select the district': 'ਜ਼ਿਲ੍ਹਾ ਚੁਣੋ', 'Sections and Act': 'ਧਾਰਾਵਾਂ ਅਤੇ ਐਕਟ',
       'Accused (Bail Bond)': 'ਦੋਸ਼ੀ (ਜ਼ਮਾਨਤ ਬਾਂਡ)', "Accused's name": 'ਦੋਸ਼ੀ ਦਾ ਨਾਮ', 'Relation': 'ਰਿਸ਼ਤਾ',
       'son of': 'ਪੁੱਤਰ', 'daughter of': 'ਪੁੱਤਰੀ', 'wife of': 'ਪਤਨੀ', "Father's / husband's name": 'ਪਿਤਾ / ਪਤੀ ਦਾ ਨਾਮ',
-      'Age (years)': 'ਉਮਰ (ਸਾਲ)', 'Resident of (full address)': 'ਵਾਸੀ (ਪੂਰਾ ਪਤਾ)', 'Bond amount': 'ਬਾਂਡ ਦੀ ਰਕਮ', 'Date of the bonds': 'ਬਾਂਡ ਦੀ ਤਰੀਕ',
+      'Age (years)': 'ਉਮਰ (ਸਾਲ)', 'Not known? Fill the date of birth below (or both)': 'ਪਤਾ ਨਹੀਂ? ਹੇਠਾਂ ਜਨਮ ਮਿਤੀ ਭਰੋ (ਜਾਂ ਦੋਵੇਂ)', 'Resident of (full address)': 'ਵਾਸੀ (ਪੂਰਾ ਪਤਾ)', 'Bond amount': 'ਬਾਂਡ ਦੀ ਰਕਮ', 'Date of the bonds': 'ਬਾਂਡ ਦੀ ਤਰੀਕ',
       "Surety's photo (in the box on the Surety Bond)": 'ਜ਼ਾਮਨ ਦੀ ਫ਼ੋਟੋ (ਜ਼ਾਮਨੀ ਬਾਂਡ ਦੇ ਖ਼ਾਨੇ ਵਿੱਚ)', 'Optional — the box stays empty without it': 'ਜ਼ਰੂਰੀ ਨਹੀਂ — ਨਾ ਲਾਓ ਤਾਂ ਖ਼ਾਨਾ ਖ਼ਾਲੀ ਰਹੇਗਾ',
       'Surety': 'ਜ਼ਾਮਨ', "Surety's name": 'ਜ਼ਾਮਨ ਦਾ ਨਾਮ', 'Aadhaar No.': 'ਆਧਾਰ ਨੰ.', 'Date of birth': 'ਜਨਮ ਮਿਤੀ',
       'Witness': 'ਗਵਾਹ', "Witness's name": 'ਗਵਾਹ ਦਾ ਨਾਮ',
@@ -178,6 +180,8 @@
     // surety as in the file: "… aged about … years Son of … Resident of …")
     rel: { en: { '': 'son of', 'daughter of': 'daughter of', 'wife of': 'wife of' }, pa: { '': 'ਪੁੱਤਰ', 'daughter of': 'ਪੁੱਤਰੀ', 'wife of': 'ਪਤਨੀ' }, hi: { '': 'पुत्र', 'daughter of': 'पुत्री', 'wife of': 'पत्नी' } },
     age: { en: a => `aged about ${a} years`, pa: a => `ਉਮਰ ਕਰੀਬ ${a} ਸਾਲ`, hi: a => `उम्र लगभग ${a} वर्ष` },
+    born: { en: d => `born on ${d}`, pa: d => `ਜਨਮ ਮਿਤੀ ${d}`, hi: d => `जन्म तिथि ${d}` },
+    ageRow: { en: a => `Age: ${a} years`, pa: a => `ਉਮਰ: ${a} ਸਾਲ`, hi: a => `उम्र: ${a} वर्ष` },
     res: { en: 'resident of ', pa: 'ਵਾਸੀ ', hi: 'निवासी ' },
   };
   const BLANK = '____________';
@@ -193,7 +197,10 @@
     const ga = gOf(v('accRel')), gs = gOf(v('surRel'));
     const relW = k => W('rel')[v(k)] || W('rel')[''];
     const person = (p, style) => {                                    // the bold description of a person
-      const name = b(p + 'Name'), father = b(p + 'Father'), age = W('age')(b(p + 'Age')), addr = b(p + 'Address');
+      // age, or the date of birth when the age is not known (both when both are filled)
+      const ag = v(p + 'Age'), dob = v(p + 'Dob');
+      const age = ag && dob ? `${W('age')(ag)}, ${W('born')(dob)}` : dob ? W('born')(dob) : W('age')(b(p + 'Age'));
+      const name = b(p + 'Name'), father = b(p + 'Father'), addr = b(p + 'Address');
       if (lang !== 'en') return `${name} ${relW(p + 'Rel')} ${father}, ${age}, ${W('res')}${addr}`;
       return style === 'surety' ? `${name} ${age} ${cap(relW(p + 'Rel'))} ${father} ${cap(W('res'))}${addr}`
         : `${name} ${relW(p + 'Rel')} ${father}, ${age}, ${W('res')}${addr}`;
@@ -263,7 +270,7 @@
         [T(W('ro') + v(p + 'Address'), 14, { b: 1 })],
         [T(W('mob') + v(p + 'Mobile'), 14, { b: 1 })],
         [T(W('aadhaar') + v(p + 'Aadhaar'), 14, { b: 1 })],
-        [T(W('dob') + v(p + 'Dob'), 14, { b: 1 })],
+        [T(v(p + 'Dob') || !v(p + 'Age') ? W('dob') + v(p + 'Dob') : W('ageRow')(v(p + 'Age')), 14, { b: 1 })],   // DOB, or the age when only that is known
         [T('', 14)],
         [T(W('sign') + (p === 'wit' ? '______________________' : '___________________'), 14, { b: 1 })],
       ].map(r => P(r, 14));
@@ -333,12 +340,6 @@
     fields: FIELDS,
     tr: TR,
     clientCaseMap: {},
-    // "Fill from Aadhaar" (js/capture.js) for each person
-    aadhaarTargets: [
-      { group: 'Accused (Bail Bond)', label: 'Accused (Bail Bond)', map: { accName: 'name', accRel: 'relChoice', accFather: 'father', accAge: 'age', accAddress: 'address' } },
-      { group: 'Surety', label: 'Surety', map: { surName: 'name', surRel: 'relChoice', surFather: 'father', surAge: 'age', surAddress: 'address', surAadhaar: 'aadhaar', surDob: 'dob' } },
-      { group: 'Witness', label: 'Witness', map: { witName: 'name', witRel: 'relChoice', witFather: 'father', witAddress: 'address', witAadhaar: 'aadhaar', witDob: 'dob' } },
-    ],
     clientTargets: [
       { label: 'Accused (Bail Bond)', map: { accName: 'name', accFather: 'father', accAddress: 'address' } },
       { label: 'Surety', map: { surName: 'name', surFather: 'father', surAddress: 'address' } },
