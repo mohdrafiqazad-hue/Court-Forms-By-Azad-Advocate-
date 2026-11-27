@@ -1,5 +1,5 @@
 /* Bail Bonds — Bail Bond, Surety Bond (with the photo box and the Witness / Surety table), Affidavit of
-   the surety (Jama Bandi) and the Bail Bond again: 4 Legal pages, as in the owner's Word file
+   the surety (Jama Bandi as in the file, or FD / Registry / RC / other) and the Bail Bond again: 4 Legal pages, as in the owner's Word file
    (Times New Roman, margins 1" left and 0.83" elsewhere, 1.5 line spacing, the same sizes).
    Only the particulars are filled in; each page stays on its own sheet, and a page with too much
    text gets smaller text by itself (that page only). Printed in English, Punjabi or Hindi
@@ -51,10 +51,14 @@
     { key: 'witAadhaar', label: 'Aadhaar No.', type: 'text' },
     { key: 'witDob', label: 'Date of birth', type: 'text', placeholder: 'DD.MM.YYYY' },
 
-    { group: 'Affidavit of the surety (Jama Bandi)' },
-    { key: 'jbAmount', label: 'Value of the Jama Bandi', type: 'text', placeholder: 'e.g. 2,00,000/-' },
-    { key: 'jbLand', label: 'Land (and share)', type: 'text', placeholder: 'e.g. Land 3.3 Marle (Share 1/48)' },
-    { key: 'jbDetails', label: 'Details of the land', type: 'area', rows: 3,
+    { group: 'Affidavit of the surety (security)' },
+    { key: 'secType', label: 'Security given by the surety', type: 'choice',
+      options: [['', 'Jama Bandi'], ['fd', 'FD (Fixed Deposit)'], ['registry', 'Registry'], ['rc', 'RC (vehicle)'], ['other', 'Other — type its name']] },
+    { key: 'secName', label: 'Name of the security (for Other)', type: 'text', placeholder: 'e.g. Kisan Vikas Patra' },
+    { key: 'jbAmount', label: 'Value of the security', type: 'text', placeholder: 'e.g. 2,00,000/-' },
+    { key: 'jbLand', label: 'Item (first line, in bold)', type: 'text', placeholder: 'e.g. Land 3.3 Marle (Share 1/48) · FD No. … · Vehicle No. …',
+      hint: 'Jama Bandi: land and share · FD: FD number and bank · Registry: property · RC: vehicle number' },
+    { key: 'jbDetails', label: 'Details (lines below it)', type: 'area', rows: 3,
       placeholder: 'Khewat No. …, out of total Rakba …\nSituated at Village …, Tehsil …\nDistt. … (Jama Bandi for the year …)', hint: 'Each line prints as a line' },
     { key: 'verDate', label: 'Date of verification', type: 'text', placeholder: 'DD.MM.YYYY', today: true },
     { key: 'verPlace', label: 'Place of verification', type: 'text', placeholder: 'e.g. Jalandhar' },
@@ -73,8 +77,11 @@
       'Age (years)': 'उम्र (साल)', 'Resident of (full address)': 'निवासी (पूरा पता)', 'Bond amount': 'बांड की रकम', 'Date of the bonds': 'बांड की तारीख़',
       'Surety': 'ज़मानतदार', "Surety's name": 'ज़मानतदार का नाम', 'Aadhaar No.': 'आधार नं.', 'Date of birth': 'जन्म तिथि',
       'Witness': 'गवाह', "Witness's name": 'गवाह का नाम',
-      'Affidavit of the surety (Jama Bandi)': 'ज़मानतदार का शपथ पत्र (जमाबंदी)', 'Value of the Jama Bandi': 'जमाबंदी की क़ीमत',
-      'Land (and share)': 'ज़मीन (और हिस्सा)', 'Details of the land': 'ज़मीन का विवरण', 'Each line prints as a line': 'हर लाइन वैसे ही छपेगी',
+      'Affidavit of the surety (security)': 'ज़मानतदार का शपथ पत्र (ज़मानत में क्या दिया)', 'Security given by the surety': 'ज़मानतदार ने ज़मानत में क्या दिया',
+      'Jama Bandi': 'जमाबंदी', 'FD (Fixed Deposit)': 'एफ.डी. (फ़िक्स्ड डिपॉज़िट)', 'Registry': 'रजिस्ट्री', 'RC (vehicle)': 'आर.सी. (वाहन)', 'Other — type its name': 'दूसरा — नाम ख़ुद लिखें',
+      'Name of the security (for Other)': 'ज़मानत का नाम (दूसरा चुनने पर)', 'Value of the security': 'ज़मानत की क़ीमत',
+      'Item (first line, in bold)': 'चीज़ (पहली लाइन, मोटे अक्षरों में)', 'Details (lines below it)': 'विवरण (उसके नीचे की लाइनें)',
+      'Jama Bandi: land and share · FD: FD number and bank · Registry: property · RC: vehicle number': 'जमाबंदी: ज़मीन और हिस्सा · एफ.डी.: एफ.डी. नंबर और बैंक · रजिस्ट्री: प्रॉपर्टी · आर.सी.: गाड़ी का नंबर', 'Each line prints as a line': 'हर लाइन वैसे ही छपेगी',
       'Date of verification': 'सत्यापन की तारीख़', 'Place of verification': 'सत्यापन की जगह',
       'Bail Bond pages': 'ज़मानत बांड के पेज', 'Two — first and last page, as in the file': 'दो — पहला और आख़िरी पेज, जैसे फ़ाइल में है', 'One — first page only': 'एक — सिर्फ़ पहला पेज',
     },
@@ -88,8 +95,11 @@
       'Age (years)': 'ਉਮਰ (ਸਾਲ)', 'Resident of (full address)': 'ਵਾਸੀ (ਪੂਰਾ ਪਤਾ)', 'Bond amount': 'ਬਾਂਡ ਦੀ ਰਕਮ', 'Date of the bonds': 'ਬਾਂਡ ਦੀ ਤਰੀਕ',
       'Surety': 'ਜ਼ਾਮਨ', "Surety's name": 'ਜ਼ਾਮਨ ਦਾ ਨਾਮ', 'Aadhaar No.': 'ਆਧਾਰ ਨੰ.', 'Date of birth': 'ਜਨਮ ਮਿਤੀ',
       'Witness': 'ਗਵਾਹ', "Witness's name": 'ਗਵਾਹ ਦਾ ਨਾਮ',
-      'Affidavit of the surety (Jama Bandi)': 'ਜ਼ਾਮਨ ਦਾ ਹਲਫ਼ਨਾਮਾ (ਜਮ੍ਹਾਂਬੰਦੀ)', 'Value of the Jama Bandi': 'ਜਮ੍ਹਾਂਬੰਦੀ ਦੀ ਕੀਮਤ',
-      'Land (and share)': 'ਜ਼ਮੀਨ (ਅਤੇ ਹਿੱਸਾ)', 'Details of the land': 'ਜ਼ਮੀਨ ਦਾ ਵੇਰਵਾ', 'Each line prints as a line': 'ਹਰ ਲਾਈਨ ਉਸੇ ਤਰ੍ਹਾਂ ਛਪੇਗੀ',
+      'Affidavit of the surety (security)': 'ਜ਼ਾਮਨ ਦਾ ਹਲਫ਼ਨਾਮਾ (ਜ਼ਮਾਨਤ ਵਿੱਚ ਕੀ ਦਿੱਤਾ)', 'Security given by the surety': 'ਜ਼ਾਮਨ ਨੇ ਜ਼ਮਾਨਤ ਵਿੱਚ ਕੀ ਦਿੱਤਾ',
+      'Jama Bandi': 'ਜਮ੍ਹਾਂਬੰਦੀ', 'FD (Fixed Deposit)': 'ਐਫ.ਡੀ. (ਫਿਕਸਡ ਡਿਪਾਜ਼ਿਟ)', 'Registry': 'ਰਜਿਸਟਰੀ', 'RC (vehicle)': 'ਆਰ.ਸੀ. (ਵਾਹਨ)', 'Other — type its name': 'ਹੋਰ — ਨਾਮ ਆਪ ਲਿਖੋ',
+      'Name of the security (for Other)': 'ਜ਼ਮਾਨਤ ਦਾ ਨਾਮ (ਹੋਰ ਚੁਣਨ ’ਤੇ)', 'Value of the security': 'ਜ਼ਮਾਨਤ ਦੀ ਕੀਮਤ',
+      'Item (first line, in bold)': 'ਚੀਜ਼ (ਪਹਿਲੀ ਲਾਈਨ, ਮੋਟੇ ਅੱਖਰਾਂ ਵਿੱਚ)', 'Details (lines below it)': 'ਵੇਰਵਾ (ਉਸਦੇ ਹੇਠਾਂ ਦੀਆਂ ਲਾਈਨਾਂ)',
+      'Jama Bandi: land and share · FD: FD number and bank · Registry: property · RC: vehicle number': 'ਜਮ੍ਹਾਂਬੰਦੀ: ਜ਼ਮੀਨ ਅਤੇ ਹਿੱਸਾ · ਐਫ.ਡੀ.: ਐਫ.ਡੀ. ਨੰਬਰ ਅਤੇ ਬੈਂਕ · ਰਜਿਸਟਰੀ: ਪ੍ਰਾਪਰਟੀ · ਆਰ.ਸੀ.: ਗੱਡੀ ਦਾ ਨੰਬਰ', 'Each line prints as a line': 'ਹਰ ਲਾਈਨ ਉਸੇ ਤਰ੍ਹਾਂ ਛਪੇਗੀ',
       'Date of verification': 'ਤਸਦੀਕ ਦੀ ਤਰੀਕ', 'Place of verification': 'ਤਸਦੀਕ ਦੀ ਥਾਂ',
       'Bail Bond pages': 'ਜ਼ਮਾਨਤ ਬਾਂਡ ਦੇ ਪੇਜ', 'Two — first and last page, as in the file': 'ਦੋ — ਪਹਿਲਾ ਅਤੇ ਆਖ਼ਰੀ ਪੇਜ, ਜਿਵੇਂ ਫ਼ਾਈਲ ਵਿੱਚ ਹੈ', 'One — first page only': 'ਇੱਕ — ਸਿਰਫ਼ ਪਹਿਲਾ ਪੇਜ',
     },
@@ -133,17 +143,25 @@
     a1: { en: () => ['That I, the deponent, am the Surety of the accused ', ', and have stood surety for the said accused in the aforementioned case.'],
       pa: s => [`ਇਹ ਕਿ ਮੈਂ, ਹਲਫ਼ੀਆ ਬਿਆਨ ਦੇਣ ${s('ਵਾਲਾ', 'ਵਾਲੀ')}, ਦੋਸ਼ੀ `, ' ਦਾ ਜ਼ਾਮਨ ਹਾਂ ਅਤੇ ਉਪਰੋਕਤ ਮੁਕੱਦਮੇ ਵਿੱਚ ਉਕਤ ਦੋਸ਼ੀ ਦੀ ਜ਼ਮਾਨਤ ਦਿੱਤੀ ਹੈ।'],
       hi: () => ['यह कि मैं, अभिसाक्षी, अभियुक्त ', ' का ज़मानतदार हूँ और उपरोक्त मुक़दमे में उक्त अभियुक्त की ज़मानत दी है।'] },
-    a2: { en: () => ['That I, the deponent, am furnishing a ', 'Jama Bandi of Rs. ', '', ' as surety in the present case.'],
-      pa: s => [`ਇਹ ਕਿ ਮੈਂ, ਹਲਫ਼ੀਆ ਬਿਆਨ ਦੇਣ ${s('ਵਾਲਾ', 'ਵਾਲੀ')}, ਇਸ ਮੁਕੱਦਮੇ ਵਿੱਚ ਜ਼ਮਾਨਤ ਵਜੋਂ `, 'ਰੁਪਏ ', ' ਦੀ ਜਮ੍ਹਾਂਬੰਦੀ', ` ਪੇਸ਼ ਕਰ ${s('ਰਿਹਾ', 'ਰਹੀ')} ਹਾਂ।`],
-      hi: s => ['यह कि मैं, अभिसाक्षी, इस मुक़दमे में ज़मानत के रूप में ', 'रु. ', ' की जमाबंदी', ` प्रस्तुत कर ${s('रहा', 'रही')} हूँ।`] },
-    jbHead: { en: 'Details of Jama Bandi', pa: 'ਜਮ੍ਹਾਂਬੰਦੀ ਦਾ ਵੇਰਵਾ', hi: 'जमाबंदी का विवरण' },
+    // x = the security: { name, said, head } in this language (Jama Bandi as in the owner's file, or FD / Registry / RC / other)
+    a2: { en: (s, x) => [`That I, the deponent, am furnishing ${/^(FD|RC|[AEIOU])/i.test(x.name) ? 'an' : 'a'} `, x.name + ' of Rs. ', '', ' as surety in the present case.'],
+      pa: (s, x) => [`ਇਹ ਕਿ ਮੈਂ, ਹਲਫ਼ੀਆ ਬਿਆਨ ਦੇਣ ${s('ਵਾਲਾ', 'ਵਾਲੀ')}, ਇਸ ਮੁਕੱਦਮੇ ਵਿੱਚ ਜ਼ਮਾਨਤ ਵਜੋਂ `, 'ਰੁਪਏ ', ' ਦੀ ' + x.name, ` ਪੇਸ਼ ਕਰ ${s('ਰਿਹਾ', 'ਰਹੀ')} ਹਾਂ।`],
+      hi: (s, x) => ['यह कि मैं, अभिसाक्षी, इस मुक़दमे में ज़मानत के रूप में ', 'रु. ', ' की ' + x.name, ` प्रस्तुत कर ${s('रहा', 'रही')} हूँ।`] },
+    jbHead: { en: x => 'Details of ' + x.head, pa: x => x.head + ' ਦਾ ਵੇਰਵਾ', hi: x => x.head + ' का विवरण' },
     total: { en: 'Total Value', pa: 'ਕੁੱਲ ਕੀਮਤ', hi: 'कुल मूल्य' },
-    a3: { en: "That the said Fard Jama Bandi stands in my name, and the same is being deposited before this Hon'ble Court as surety security.",
-      pa: 'ਇਹ ਕਿ ਉਕਤ ਫ਼ਰਦ ਜਮ੍ਹਾਂਬੰਦੀ ਮੇਰੇ ਨਾਮ ’ਤੇ ਹੈ ਅਤੇ ਇਹ ਮਾਣਯੋਗ ਅਦਾਲਤ ਵਿੱਚ ਜ਼ਮਾਨਤ ਵਜੋਂ ਜਮ੍ਹਾਂ ਕਰਵਾਈ ਜਾ ਰਹੀ ਹੈ।',
-      hi: 'यह कि उक्त फ़र्द जमाबंदी मेरे नाम पर है और यह माननीय न्यायालय में ज़मानत के रूप में जमा कराई जा रही है।' },
-    a4: { en: 'That I have not previously stood surety for any other person on the basis of the said Fard Jama Bandi in any Court of law.',
-      pa: 'ਇਹ ਕਿ ਮੈਂ ਪਹਿਲਾਂ ਕਿਸੇ ਵੀ ਅਦਾਲਤ ਵਿੱਚ ਉਕਤ ਫ਼ਰਦ ਜਮ੍ਹਾਂਬੰਦੀ ਦੇ ਆਧਾਰ ’ਤੇ ਕਿਸੇ ਹੋਰ ਵਿਅਕਤੀ ਦੀ ਜ਼ਮਾਨਤ ਨਹੀਂ ਦਿੱਤੀ।',
-      hi: 'यह कि मैंने पहले किसी भी न्यायालय में उक्त फ़र्द जमाबंदी के आधार पर किसी अन्य व्यक्ति की ज़मानत नहीं दी है।' },
+    a3: { en: x => `That the said ${x.said} stands in my name, and the same is being deposited before this Hon'ble Court as surety security.`,
+      pa: x => `ਇਹ ਕਿ ਉਕਤ ${x.said} ਮੇਰੇ ਨਾਮ ’ਤੇ ਹੈ ਅਤੇ ਇਹ ਮਾਣਯੋਗ ਅਦਾਲਤ ਵਿੱਚ ਜ਼ਮਾਨਤ ਵਜੋਂ ਜਮ੍ਹਾਂ ਕਰਵਾਈ ਜਾ ਰਹੀ ਹੈ।`,
+      hi: x => `यह कि उक्त ${x.said} मेरे नाम पर है और यह माननीय न्यायालय में ज़मानत के रूप में जमा कराई जा रही है।` },
+    a4: { en: x => `That I have not previously stood surety for any other person on the basis of the said ${x.said} in any Court of law.`,
+      pa: x => `ਇਹ ਕਿ ਮੈਂ ਪਹਿਲਾਂ ਕਿਸੇ ਵੀ ਅਦਾਲਤ ਵਿੱਚ ਉਕਤ ${x.said} ਦੇ ਆਧਾਰ ’ਤੇ ਕਿਸੇ ਹੋਰ ਵਿਅਕਤੀ ਦੀ ਜ਼ਮਾਨਤ ਨਹੀਂ ਦਿੱਤੀ।`,
+      hi: x => `यह कि मैंने पहले किसी भी न्यायालय में उक्त ${x.said} के आधार पर किसी अन्य व्यक्ति की ज़मानत नहीं दी है।` },
+    // the securities: name (in "furnishing a … of Rs."), said ("the said …"), head ("Details of …")
+    sec: {
+      '': { en: ['Jama Bandi', 'Fard Jama Bandi', 'Jama Bandi'], pa: ['ਜਮ੍ਹਾਂਬੰਦੀ', 'ਫ਼ਰਦ ਜਮ੍ਹਾਂਬੰਦੀ', 'ਜਮ੍ਹਾਂਬੰਦੀ'], hi: ['जमाबंदी', 'फ़र्द जमाबंदी', 'जमाबंदी'] },
+      fd: { en: ['FD (Fixed Deposit)', 'FD', 'FD'], pa: ['ਐਫ.ਡੀ. (ਫਿਕਸਡ ਡਿਪਾਜ਼ਿਟ)', 'ਐਫ.ਡੀ.', 'ਐਫ.ਡੀ.'], hi: ['एफ.डी. (फ़िक्स्ड डिपॉज़िट)', 'एफ.डी.', 'एफ.डी.'] },
+      registry: { en: ['Registry (Sale Deed)', 'Registry', 'Registry'], pa: ['ਰਜਿਸਟਰੀ', 'ਰਜਿਸਟਰੀ', 'ਰਜਿਸਟਰੀ'], hi: ['रजिस्ट्री', 'रजिस्ट्री', 'रजिस्ट्री'] },
+      rc: { en: ['RC (Registration Certificate) of the vehicle', 'RC', 'RC'], pa: ['ਵਾਹਨ ਦੀ ਆਰ.ਸੀ.', 'ਆਰ.ਸੀ.', 'ਆਰ.ਸੀ.'], hi: ['वाहन की आर.सी.', 'आर.सी.', 'आर.सी.'] },
+    },
     a5: { en: 'That the contents of this affidavit are true and correct to the best of my knowledge and belief.',
       pa: 'ਇਹ ਕਿ ਇਸ ਹਲਫ਼ਨਾਮੇ ਦੀਆਂ ਗੱਲਾਂ ਮੇਰੀ ਜਾਣਕਾਰੀ ਅਤੇ ਯਕੀਨ ਅਨੁਸਾਰ ਸੱਚ ਅਤੇ ਸਹੀ ਹਨ।',
       hi: 'यह कि इस शपथ पत्र की बातें मेरी जानकारी और विश्वास के अनुसार सत्य और सही हैं।' },
@@ -266,7 +284,11 @@
     const affidavitPage = step => pageOf(({ T, P, gap, header }) => {
       const S = 13, item = (no, runs, align = 'both') => P([T(no + '.\t', S)].concat(runs), S, { align, indL: 36, hang: 18 });
       const [a1a, a1b] = (TXT.a1[lang] || TXT.a1.en)(gs);
-      const [a2a, a2b, a2c, a2d] = (TXT.a2[lang] || TXT.a2.en)(gs);
+      // the security: Jama Bandi (as in the file), FD, Registry, RC, or another one typed by name
+      const st = v('secType'), typed = v('secName') || BLANK;
+      const sx = st === 'other' ? [typed, typed, typed] : ((TXT.sec[st] || TXT.sec[''])[lang] || TXT.sec[st || ''].en);
+      const x = { name: sx[0], said: sx[1], head: sx[2] };
+      const [a2a, a2b, a2c, a2d] = (TXT.a2[lang] || TXT.a2.en)(gs, x);
       const [va, vb] = (TXT.ver[lang] || TXT.ver.en)(b('verPlace'));
       const details = K.clean(d.jbDetails).split('\n').map(s => s.trim()).filter(Boolean);
       return header(24.15).concat([
@@ -274,12 +296,12 @@
         P([T(W('I'), S), T(person('sur', 'surety'), S, { b: 1 }), T((TXT.affIntro[lang] || TXT.affIntro.en)(gs), S)], S, { align: 'both' }),
         item(1, [T(a1a, S), T(accused, S, { b: 1 }), T(a1b, S)]),
         item(2, [T(a2a, S), T(a2b + b('jbAmount') + a2c, S, { b: 1 }), T(a2d, S)]),
-        P([T('\t' + W('jbHead') + '\t' + W('total'), S, { b: 1 })], S, { tabs: [36, 360] }),
+        P([T('\t' + W('jbHead')(x) + '\t' + W('total'), S, { b: 1 })], S, { tabs: [36, 360] }),
         P([T('•\t' + (v('jbLand') || BLANK) + '\t' + v('jbAmount'), S, { b: 1 })], S, { indL: 36, hang: 18, tabs: [324] }),
       ], (details.length ? details : ['']).map(t => P([T(t, S)], S, { indL: 36 })), [
         P([T('\t' + v('jbAmount'), S, { b: 1 })], S, { indL: 36, tabs: [363] }),
-        item(3, [T(W('a3'), S)], 'left'),
-        item(4, [T(W('a4'), S)]),
+        item(3, [T(W('a3')(x), S)], 'left'),
+        item(4, [T(W('a4')(x), S)]),
         item(5, [T(W('a5'), S)]),
         P([T(W('deponent'), S, { b: 1 })], S, { align: 'right' }),
         P([T(W('verif'), S, { b: 1 })], S),

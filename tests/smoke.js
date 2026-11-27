@@ -196,6 +196,22 @@ const pdfInfo = buf => {
     const fonts = zipText((await dl('#btnWord')).buf, 'word/document.xml');
     check(/w:ascii="Times New Roman"/.test(fonts) && !/Nirmala|Arial|Calibri/.test(fonts) && /<w:sz w:val="28"\/>/.test(fonts) && /<w:sz w:val="32"\/>/.test(fonts),
       'bail: Times New Roman, 14 pt text and 16 pt court heading as in the file');
+    // the surety's security: Jama Bandi (as in the file), FD, Registry, RC or another one typed by name
+    const SEC = [['', 'furnishing a Jama Bandi of Rs. ', 'the said Fard Jama Bandi', 'Details of Jama Bandi'], ['fd', 'furnishing an FD (Fixed Deposit) of Rs. ', 'the said FD', 'Details of FD'],
+      ['registry', 'furnishing a Registry (Sale Deed) of Rs. ', 'the said Registry', 'Details of Registry'], ['rc', 'furnishing an RC (Registration Certificate) of the vehicle of Rs. ', 'the said RC', 'Details of RC'],
+      ['other', 'furnishing a Kisan Vikas Patra of Rs. ', 'the said Kisan Vikas Patra', 'Details of Kisan Vikas Patra']];
+    await page.fill('#f_secName', 'Kisan Vikas Patra');
+    for (const [k, t1, t2, t3] of SEC) {
+      await page.selectOption('#f_secType', k); await page.waitForTimeout(250);
+      const x = zipText((await dl('#btnWord')).buf, 'word/document.xml').replace(/<[^>]+>/g, '');
+      const pp = pdfInfo((await dl('#btnPdf')).buf);
+      check(x.includes(t1) && x.includes(t2) && x.includes(t3) && pp.pages === 4, `bail: surety's security "${k || 'Jama Bandi'}" in the affidavit (${t3})`);
+    }
+    await page.click('#plangSeg [data-pl="pa"]'); await page.waitForTimeout(300);
+    check(zipText((await dl('#btnWord')).buf, 'word/document.xml').replace(/<[^>]+>/g, '').includes('ਉਕਤ Kisan Vikas Patra'), 'bail: the typed security also in Punjabi');
+    await page.selectOption('#f_secType', 'rc'); await page.waitForTimeout(250);
+    check(zipText((await dl('#btnWord')).buf, 'word/document.xml').replace(/<[^>]+>/g, '').includes('ਉਕਤ ਆਰ.ਸੀ.'), 'bail: RC in Punjabi');
+    await page.click('#plangSeg [data-pl="en"]'); await page.selectOption('#f_secType', ''); await page.fill('#f_secName', '');
     // much more text: the full page gets smaller text, still 4 pages, nothing outside the page
     await page.fill('#f_surAddress', 'House No. 1, near the canal bridge and the grain market, '.repeat(8));
     await page.fill('#f_accAddress', 'Ward No. 1, near the old water tank and the government school, opposite the bus stand, '.repeat(6));
