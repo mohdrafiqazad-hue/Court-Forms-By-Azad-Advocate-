@@ -1,6 +1,6 @@
 // Service worker: caches the whole app so it runs fully offline after the first visit.
 // Bump VERSION whenever any file changes, so users get the update.
-const VERSION = 'icf-v14';
+const VERSION = 'icf-v15';
 const OCR = 'icf-ocr-v1'; // Tesseract 5.1.1 + English data: change the name when lib/ocr changes
 const FILES = [
   './', './index.html', './css/app.css',

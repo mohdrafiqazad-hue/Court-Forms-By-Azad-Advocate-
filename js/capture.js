@@ -1,5 +1,5 @@
 /* i Court Forms — photos from the camera or the gallery, read ON THE PHONE (nothing is sent anywhere):
-   1. "Fill from Aadhaar": the card's QR code (lib/qr: jsQR + pako; the phone's own BarcodeDetector when it has one)
+   1. "Fill from ID card" (Aadhaar, Voter ID, PAN, Driving Licence, Passport or another ID): the card's QR code (lib/qr: jsQR + pako; the phone's own BarcodeDetector when it has one)
       and its printed text (lib/ocr: Tesseract, English, loaded the first time it is used, then offline) give
       name, S/O · D/O · W/O, date of birth, age, address, post office, tehsil, district, Aadhaar number.
       The user checks the values and fills them into the form (form.aadhaarTargets: [{ group, label, map: { formKey: value } }]).
@@ -90,6 +90,26 @@
 
   // ------------------------------------------------------------ printed text (OCR)
   let worker = null, idle = 0;
+  // A photo made easier to read: grey, stretched contrast, enlarged small pictures, turned by `turn` × 90°
+  function prep(img, turn) {
+    const w0 = img.naturalWidth || img.width, h0 = img.naturalHeight || img.height;
+    const k = Math.min(2400 / Math.max(w0, h0), Math.max(1, 1800 / Math.max(w0, h0)));
+    const w = Math.round(w0 * k), h = Math.round(h0 * k), side = turn % 2;
+    const c = document.createElement('canvas'); c.width = side ? h : w; c.height = side ? w : h;
+    const g = c.getContext('2d');
+    g.translate(c.width / 2, c.height / 2); g.rotate(turn * Math.PI / 2); g.drawImage(img, -w / 2, -h / 2, w, h);
+    const d = g.getImageData(0, 0, c.width, c.height), px = d.data, hist = new Uint32Array(256);
+    for (let i = 0; i < px.length; i += 4) { const y = (px[i] * 299 + px[i + 1] * 587 + px[i + 2] * 114) / 1000 | 0; px[i] = y; hist[y]++; }
+    const n = px.length / 4; let lo = 0, hi = 255, acc = 0;
+    while (lo < 255 && (acc += hist[lo]) < n * 0.02) lo++;
+    acc = 0; while (hi > 0 && (acc += hist[hi]) < n * 0.02) hi--;
+    const span = Math.max(1, hi - lo);
+    for (let i = 0; i < px.length; i += 4) { const y = Math.max(0, Math.min(255, (px[i] - lo) * 255 / span)); px[i] = px[i + 1] = px[i + 2] = y; }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.putImageData(d, 0, 0);
+    return c;
+  }
+  // how much real text a reading has (to pick the right way up)
+  const score = txt => (txt.match(/\b[A-Za-z]{3,}\b/g) || []).length + 2 * (txt.match(/\d{4}/g) || []).length;
   async function ocr(img, onp) {
     await loadScript('lib/ocr/tesseract.min.js');
     if (!worker) {
@@ -100,9 +120,15 @@
       });
     }
     clearTimeout(idle);
-    const { data } = await worker.recognize(canvasOf(img, 1800));
+    let best = '', bestScore = -1;
+    for (const turn of [0, 1, 3, 2]) {                  // upright first; a photo taken sideways or upside down is turned
+      const { data } = await worker.recognize(prep(img, turn));
+      const sc = score(data.text || '');
+      if (sc > bestScore) { best = data.text || ''; bestScore = sc; }
+      if (sc >= 14) break;                              // clearly readable: no need to turn
+    }
     idle = setTimeout(() => { if (worker) { worker.terminate(); worker = null; } }, 90000);
-    return data.text || '';
+    return best;
   }
   // Verhoeff check digit of an Aadhaar number
   const VD = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 2, 3, 4, 0, 6, 7, 8, 9, 5], [2, 3, 4, 0, 1, 7, 8, 9, 5, 6], [3, 4, 0, 1, 2, 8, 9, 5, 6, 7], [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
@@ -110,32 +136,106 @@
   const VP = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 5, 7, 6, 2, 8, 3, 0, 9, 4], [5, 8, 0, 3, 7, 9, 6, 1, 4, 2], [8, 9, 1, 6, 0, 4, 3, 5, 2, 7], [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],
     [4, 2, 8, 6, 5, 7, 3, 9, 0, 1], [2, 7, 9, 3, 8, 0, 6, 4, 1, 5], [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]];
   const verhoeff = s => { let c = 0; s.split('').reverse().forEach((d, i) => { c = VD[c][VP[i % 8][+d]]; }); return c === 0; };
+  // ------------------------------------------------------------ any ID card: Aadhaar, Voter ID (EPIC), PAN, Driving Licence, Passport, others
+  const titleCase = n => (/[a-z]/.test(n) ? n : n.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase())).replace(/\s+/g, ' ').trim();
+  const nameOnly = s => titleCase(String(s || '').replace(/[^A-Za-z .']/g, ' ').replace(/\s+/g, ' ').replace(/^[ .']+|[ .']+$/g, ''));
+  const okName = s => /^[A-Za-z.']+( [A-Za-z.']+){0,5}$/.test(s) && s.replace(/[^A-Za-z]/g, '').length >= 3
+    && !/government|india|aadhaar|authority|income|department|election|commission|licence|license|republic|passport|card|signature|address|male|female|birth/i.test(s);
+  const DATE = /(\d{1,2})\s?[\/\-.]\s?(\d{1,2})\s?[\/\-.]\s?((?:19|20)\d{2})/;
   function parseText(text) {
     const r = { via: 'text' };
-    const lines = text.split('\n').map(l => l.replace(/[|_~]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+    const raw = String(text || '');
+    const lines = raw.split('\n').map(l => l.replace(/[|_~«»“”"]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+    const all = lines.join('\n');
+    // the value after a label on the same line, or on the next line
+    const after = (re, okFn = x => /[A-Za-z]/.test(x)) => {
+      for (let i = 0; i < lines.length; i++) {
+        const m = lines[i].match(re); if (!m) continue;
+        const rest = lines[i].slice(m.index + m[0].length).replace(/^[\s:.;,\-–/]+/, '').trim();
+        if (okFn(rest)) return rest;
+        if (lines[i + 1] && okFn(lines[i + 1])) return lines[i + 1];
+      }
+      return '';
+    };
+    const nm = re => { const v = nameOnly(after(re, x => okName(nameOnly(x)))); return okName(v) ? v : ''; };
+
+    // which card
+    const pan = all.match(/\b([A-Z]{5})\s?([0-9OIlSB]{4})\s?([A-Z])\b/);
+    const epic = all.match(/\b([A-Z]{3})\s?([0-9OIl]{7})\b/);
+    const dl = all.match(/\b([A-Z]{2})[- ]?(\d{2})[- ]?((?:19|20)\d{2})[- ]?(\d{7})\b/) || all.match(/\b([A-Z]{2}\d{2}\s?\d{11})\b/);
+    const mrz = lines.map(l => l.replace(/\s/g, '').replace(/[«(]/g, '<')).filter(l => (l.match(/</g) || []).length >= 4);
+    const fixDigits = x => x.replace(/[OQ]/g, '0').replace(/[Il]/g, '1').replace(/S/g, '5').replace(/B/g, '8');
+    if (/income\s*tax|permanent\s*account/i.test(all) || (pan && !/aadhaar|election|licen/i.test(all))) {
+      r.idType = 'PAN'; if (pan) r.idNo = pan[1] + fixDigits(pan[2]) + pan[3];
+    } else if (/election\s*commission|elector|epic/i.test(all)) {
+      r.idType = 'Voter ID'; if (epic) r.idNo = epic[1] + fixDigits(epic[2]);
+    } else if (/driving\s*licen[cs]e|\bD\.?L\.?\s*No/i.test(all)) {
+      r.idType = 'Driving Licence'; if (dl) r.idNo = dl[0].replace(/\s/g, '');
+    } else if (mrz.length >= 2 || /passport/i.test(all)) {
+      r.idType = 'Passport';
+    } else if (/aadhaar|unique\s*identification|government\s*of\s*india|\d{4}\s\d{4}\s\d{4}/i.test(all)) {
+      r.idType = 'Aadhaar';
+    } else r.idType = 'ID card';
+
     // Aadhaar number: 12 digits in groups of 4 (not the 16-digit VID), with a valid check digit
-    const nums = [...text.matchAll(/(?<![\d])(\d{4})[ ]?(\d{4})[ ]?(\d{4})(?![ ]?\d)/g)].map(m => m[1] + m[2] + m[3]).filter(n => !/^[01]/.test(n));
+    const nums = [...raw.matchAll(/(?<![\d])(\d{4})[ ]?(\d{4})[ ]?(\d{4})(?![ ]?\d)/g)].map(m => m[1] + m[2] + m[3]).filter(n => !/^[01]/.test(n));
     r.aadhaarAll = nums.filter(verhoeff);
-    const dob = text.match(/(?:DOB|D0B|DO8|Birth|जन्म)[^\d]{0,20}(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})/i) || text.match(/\b(\d{2})\/(\d{2})\/(19\d\d|20\d\d)\b/);
-    if (dob) r.dob = dob[1] + '/' + dob[2] + '/' + dob[3];
-    else { const y = text.match(/Year of Birth[^\d]{0,10}(\d{4})/i); if (y) r.dob = y[1]; }
-    const g = text.match(/\b(FEMALE|MALE)\b/i); if (g) r.gender = g[1].toUpperCase()[0];
-    // name: the English line just above the date of birth
-    const di = lines.findIndex(l => /DOB|D0B|Birth|\d{2}\/\d{2}\/\d{4}/i.test(l));
-    for (let i = di - 1; i >= 0 && i >= di - 3; i--) {
-      const l = lines[i].replace(/[^A-Za-z .]/g, '').trim();
-      if (/^[A-Za-z.]+( [A-Za-z.]+){1,4}$/.test(l) && !/government|india|aadhaar|authority/i.test(l) && l.length >= 5) { r.name = l; break; }
+
+    // Passport: the two machine-readable lines at the bottom are the surest
+    const l1 = mrz.find(l => /^P[<A-Z]/.test(l)), l2 = mrz.find(l => /^[A-Z0-9<]{9}\d[A-Z<]{3}\d{6}\d[MF<]/.test(l));
+    if (l1) {
+      const [sur, given] = l1.slice(5).split('<<');
+      const full = [given, sur].filter(Boolean).map(x => x.replace(/</g, ' ').trim()).join(' ');
+      if (full) r.name = titleCase(full);
     }
-    // S/O · D/O · W/O · C/O and the address (back of the card)
-    const co = text.match(/\b([SDWC])\s?[\/.]?\s?O\s*[:.,-]?\s*([A-Za-z][A-Za-z .]{2,40}?)\s*(?:,|\n|$)/);
-    if (co) r.careof = co[1].toUpperCase() + '/O: ' + co[2].trim();
-    const ai = text.search(/Address\s*:?/i);
+    if (l2) {
+      r.idNo = l2.slice(0, 9).replace(/</g, '');
+      const yy = +l2.slice(13, 15), cy = new Date().getFullYear() % 100;
+      r.dob = l2.slice(17, 19) + '/' + l2.slice(15, 17) + '/' + (yy > cy ? 1900 + yy : 2000 + yy);
+      r.gender = l2[20] === 'F' ? 'F' : l2[20] === 'M' ? 'M' : '';
+    }
+
+    // date of birth, gender, age
+    if (!r.dob) {
+      const lab = all.match(new RegExp('(?:DOB|D0B|DO8|Date\\s*of\\s*Birth|Birth|जन्म)[^\\d]{0,25}' + DATE.source, 'i'));
+      const any = lab || all.match(DATE);
+      if (any) r.dob = p2(any[1]) + '/' + p2(any[2]) + '/' + any[3];
+      else { const y = all.match(/Year\s*of\s*Birth[^\d]{0,10}((?:19|20)\d{2})/i); if (y) r.dob = y[1]; }
+    }
+    if (!r.gender) { const g = all.match(/\b(FEMALE|MALE)\b/i) || all.match(/\bSex\s*[:/]?\s*([MF])\b/i); if (g) r.gender = g[1].toUpperCase()[0]; }
+    if (!r.dob) { const a = all.match(/Age(?:\s*as\s*on[^:]*)?\s*[:\-]?\s*(\d{2})\b/i); if (a) r.ageText = a[1]; }
+
+    // name
+    if (!r.name) r.name = nm(/(?<!(?:father|husband|mother|guardian)'?s?\s{0,3})(?:\b|(?<=Elector'?s))Name\b(?!\s*of\s*(?:father|husband|mother))/i);
+    if (!r.name && r.idType === 'PAN') {                 // old PAN: name and father's name are the first two lines after the heading
+      const hi = lines.findIndex(l => /income\s*tax|govt/i.test(l));
+      const names = lines.slice(hi + 1).map(nameOnly).filter(okName);
+      if (names[0]) r.name = names[0]; if (names[1]) r.father = names[1];
+    }
+    if (!r.name) {                                       // Aadhaar: the English line just above the date of birth
+      const di = lines.findIndex(l => /DOB|D0B|Birth|\d{2}\/\d{2}\/\d{4}/i.test(l));
+      for (let i = di - 1; i >= 0 && i >= di - 3; i--) { const l = nameOnly(lines[i]); if (okName(l) && l.length >= 5) { r.name = l; break; } }
+    }
+
+    // father / husband: S/O · D/O · W/O, or a labelled line
+    const co = all.match(/\b([SDWC])\s?[\/.]?\s?O\b\s*[:.,-]?\s*([A-Za-z][A-Za-z .]{2,40}?)\s*(?:,|\n|$)/)
+      || all.match(/\b(Son|Daughter|Wife|Care)\s*of\s*[:.,-]?\s*([A-Za-z][A-Za-z .]{2,40}?)\s*(?:,|\n|$)/i);
+    if (co && !/^S\s*\/\s*D\s*\/\s*W/i.test(co[0])) { r.careof = co[1][0].toUpperCase() + '/O: ' + nameOnly(co[2]); }
+    if (!r.careof) {
+      const hus = nm(/Husband'?s?\s*Name/i), fat = nm(/Father'?s?\s*Name|Name\s*of\s*Father|Father\s*\/\s*Legal\s*Guardian|S\s*\/\s*D\s*\/\s*W\s*of|Son\s*\/\s*Daughter\s*\/\s*Wife\s*of/i);
+      if (hus) r.careof = 'W/O: ' + hus;
+      else if (fat) r.careof = (r.gender === 'F' ? 'D' : r.gender === 'M' ? 'S' : 'C') + '/O: ' + fat;
+      else if (r.father) r.careof = 'C/O: ' + r.father;
+    }
+
+    // address: after "Address", up to the PIN code
+    const ai = all.search(/Address\s*[:\-]?/i);
     if (ai >= 0) {
-      let a = text.slice(ai).replace(/^Address\s*:?\s*/i, '');
+      let a = all.slice(ai).replace(/^Address\s*[:\-]?\s*/i, '');
       const pin = a.match(/\b(\d{6})\b/);
       if (pin) { r.pin = pin[1]; a = a.slice(0, pin.index); }
-      a = a.replace(/\n/g, ', ').replace(/[^A-Za-z0-9 ,.\/\-#()]/g, ' ').replace(/\s+/g, ' ').replace(/(,\s*)+/g, ', ').replace(/^[,\s]+|[,\s-]+$/g, '');
-      if (co) a = a.replace(/^[SDWC]\s?[\/.]?\s?O\s*[:.,-]?\s*[^,]+,\s*/i, '');
+      a = a.replace(/\n/g, ', ').replace(/[^A-Za-z0-9 ,.\/\-#()]/g, ' ').replace(/\s+/g, ' ').replace(/(\s*,\s*)+/g, ', ').replace(/^[,\s]+|[,\s-]+$/g, '');
+      a = a.replace(/^(?:[SDWC]\s?[\/.]?\s?O|Son of|Daughter of|Wife of)\s*[:.,-]?\s*[^,]+,\s*/i, '');
       if (a.length > 5) r.addressText = a;
     }
     return r;
@@ -163,7 +263,7 @@
     const relShort = { 'son of': 'S/o', 'daughter of': 'D/o', 'wife of': 'W/o' }[rel];
     const nice = n => String(n || '').replace(/\s+/g, ' ').trim();
     const v = {
-      name: nice(r.name), father: nice(father), rel, relChoice: rel === 'son of' ? '' : rel, dob: fmtDob(r.dob), age: ageOf(r.dob),
+      name: nice(r.name), father: nice(father), rel, relChoice: rel === 'son of' ? '' : rel, dob: fmtDob(r.dob), age: ageOf(r.dob) || nice(r.ageText),
       address, addressLocal, po: nice(r.po), tehsil: nice(r.tehsil), district: nice(r.district),
       aadhaar: r.aadhaar ? r.aadhaar.replace(/(\d{4})(?=\d)/g, '$1 ') : '',
     };
@@ -173,12 +273,16 @@
   // QR first (UIDAI's own data), then what the printed text adds; the number must match the QR's last 4 digits
   function merge(list) {
     const qr = list.find(r => r.via === 'qr') || {}, txt = list.filter(r => r.via === 'text');
-    const r = Object.assign({}, ...txt.map(x => { const c = Object.assign({}, x); delete c.aadhaarAll; return c; }), ...Object.entries(qr).filter(([, x]) => x).map(([k, x]) => ({ [k]: x })));
+    // every photo adds what it has (an empty value never wipes one found on the other side); the QR wins
+    const filled = o => Object.fromEntries(Object.entries(o).filter(([k, x]) => x && k !== 'aadhaarAll'));
+    const r = Object.assign({}, ...txt.map(filled), filled(qr));
+    const typed = txt.find(x => x.idType && x.idType !== 'ID card'); if (typed) { r.idType = typed.idType; r.idNo = typed.idNo || r.idNo; }
     if (!qr.aadhaar) {
       const all = txt.flatMap(x => x.aadhaarAll || []);
       r.aadhaar = (qr.last4 ? all.find(n => n.endsWith(qr.last4)) : all[0]) || '';
     }
     r.fromQR = !!qr.via;
+    if (qr.via) r.idType = 'Aadhaar';
     return r;
   }
 
@@ -220,7 +324,7 @@
     const F = CF.formApi, form = F.form(); const r = merge(job.results), v = values(r);
     const rows = Object.entries(job.target.map).map(([key, src]) => ({ key, src, val: v[src] || '', field: form.fields.find(f => f.key === key) })).filter(x => x.field && x.val !== '' || (x.field && x.src === 'relChoice' && v.rel));
     if (!rows.length) { say(t('aadhaarNone')); return; }
-    say(t(r.fromQR ? 'aadhaarFoundQR' : 'aadhaarFound'));
+    say((r.idType ? t('idRead', { id: r.idType + (r.idNo ? ' ' + r.idNo : '') }) + ' ' : '') + t(r.fromQR ? 'aadhaarFoundQR' : 'aadhaarFound'));
     const shown = x => x.field.type === 'choice' ? CF.i18n.ft(form, (x.field.options.find(o => o[0] === x.val) || ['', x.val])[1]) : x.val;
     box.querySelector('.aad-out').innerHTML = `<div class="aad-rows">${rows.map((x, i) => `<label class="aad-row"><input type="checkbox" checked data-aad-use="${i}">
         <span><b>${esc(CF.i18n.ft(form, x.field.label))}</b>${x.field.type === 'choice' ? `<em>${esc(shown(x))}</em>` : `<input type="text" data-aad-val="${i}" value="${esc(x.val)}">`}</span></label>`).join('')}</div>

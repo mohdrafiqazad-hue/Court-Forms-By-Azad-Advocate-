@@ -247,6 +247,23 @@ const pdfInfo = buf => {
     check(await readCard(2, ['aadhaar-test-oldqr.png']) && await val('witName') === 'Old Card Singh' && await val('witRel') === 'wife of' && await val('witFather') === 'Test Singh' && await val('witAadhaar') === '2345 6789 0124',
       'aadhaar: old XML QR → witness name, W/O, husband, Aadhaar No.');
     check(await page.evaluate(() => CF.capture.verhoeff('234567890124') && !CF.capture.verhoeff('234567890123')), 'aadhaar: number check digit (Verhoeff)');
+    // other ID cards (made up): PAN, Voter ID (front + back), Driving Licence, Passport (machine-readable lines), Aadhaar photo taken sideways
+    const IDS = [
+      [['test-id-pan.png'], { surName: 'Harpreet Kaur', surDob: '05.03.1992' }, /^Gurde/],
+      [['test-id-voter.png', 'test-id-voter-back.png'], { surName: 'Balwinder Kumar', surFather: 'Jagdish Ram', surRel: '', surDob: '12.07.1978' }, null, /Basti Test.*144002/],
+      [['test-id-dl.png'], { surName: 'Simran Arora', surFather: 'Rakesh Arora', surRel: 'daughter of', surDob: '21.11.1995' }, null, /Model Town.*144003/],
+      [['test-id-passport.png'], { surName: 'Anil Kumar Sharma', surDob: '14.01.1980' }],
+      [['test-id-aadhaar-sideways.jpg'], { surName: 'Test Kumar', surDob: '15.08.1985', surAadhaar: '2345 6789 0124' }],
+    ];
+    for (const [files, want, father, addr] of IDS) {
+      await page.click('#btnClear'); await page.click('#confirm [data-yes]');
+      const ok = await readCard(1, files);
+      const got = {}; for (const k of Object.keys(want)) got[k] = await val(k);
+      check(ok && Object.entries(want).every(([k, x]) => got[k] === x) && (!father || father.test(await val('surFather'))) && (!addr || addr.test(await val('surAddress'))),
+        `ID card read from the photo: ${files.join(' + ')}` + (ok ? '' : ' (not read)') + ' ' + JSON.stringify(got));
+    }
+    await page.click('#btnClear'); await page.click('#confirm [data-yes]');
+    check(await readCard(1, ['aadhaar-test-front.png', 'aadhaar-test-back.jpg']), 'aadhaar again after other cards');
     const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-photo="surPhoto"] [data-photo-gal]')]);
     await fc.setFiles(path.join(FX, 'aadhaar-test-front.png')); await page.waitForTimeout(800);
     const pp = await dl('#btnPdf'), ww = await dl('#btnWord');
