@@ -158,6 +158,7 @@
         row.cells.forEach(cell => {
           const pad = Object.assign({ l: 3, r: 3, t: 1, b: 1 }, cell.pad || {});
           const x = colX[cell._c], w = colX[cell._c + (cell.span || 1)] - x;
+          if (cell.image) ops.push({ t: 'image', x: x + 1, y: y + 1, w: w - 2, h: row._h - 2, src: cell.image });   // a photo filling the box (under its border)
           const sides = cell.sides || {};
           const bw = b.border || 0.5;
           const edge = { t: [x, y, x + w, y], r: [x + w, y, x + w, y + row._h], b: [x, y + row._h, x + w, y + row._h], l: [x, y, x, y + row._h] };
@@ -229,6 +230,13 @@
       tabStops: (p.tabs || []).map(v => ({ type: D.TabStopType.LEFT, position: tw(v) })),
       children: p.runs.length ? p.runs.map(run) : [new D.TextRun('')],
     });
+    // a photo in a box: a JPEG picture of the box's size (1 pt = 96/72 px in Word)
+    const photoPara = (src, w, h) => {
+      const bin = atob(String(src).split(',')[1] || ''), bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: 0, line: tw(h), lineRule: D.LineRuleType.EXACT },
+        children: [new D.ImageRun({ type: 'jpg', data: bytes, transformation: { width: Math.round(w * 96 / 72), height: Math.round(h * 96 / 72) } })] });
+    };
     const border = (k, wdt) => k === 'none' ? { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' }
       : { style: k === 'dotted' ? D.BorderStyle.DOTTED : D.BorderStyle.SINGLE, size: k === 'dotted' ? 12 : Math.max(2, Math.round(wdt * 8)), color: '000000' };
     const children = [];
@@ -248,7 +256,7 @@
             margins: { left: tw(pad.l), right: tw(pad.r), top: tw(pad.t), bottom: tw(pad.b) },
             verticalAlign: cell.valign === 'center' ? D.VerticalAlign.CENTER : cell.valign === 'bottom' ? D.VerticalAlign.BOTTOM : D.VerticalAlign.TOP,
             borders: { top: border(sd.t || 'single', b.border || 0.5), right: border(sd.r || 'single', b.border || 0.5), bottom: border(sd.b || 'single', b.border || 0.5), left: border(sd.l || 'single', b.border || 0.5) },
-            children: (cell.paras && cell.paras.length) ? cell.paras.map(para) : [new D.Paragraph('')],
+            children: cell.image ? [photoPara(cell.image, w - 2, row._h - 2)] : (cell.paras && cell.paras.length) ? cell.paras.map(para) : [new D.Paragraph('')],
           });
         }),
       }));

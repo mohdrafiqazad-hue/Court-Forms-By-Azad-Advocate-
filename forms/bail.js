@@ -41,6 +41,7 @@
     { key: 'surMobile', label: 'Mobile', type: 'text' },
     { key: 'surAadhaar', label: 'Aadhaar No.', type: 'text' },
     { key: 'surDob', label: 'Date of birth', type: 'text', placeholder: 'DD.MM.YYYY' },
+    { key: 'surPhoto', label: "Surety's photo (in the box on the Surety Bond)", type: 'photo', box: [114.6, 140.5], hint: 'Optional — the box stays empty without it' },
 
     { group: 'Witness' },
     { key: 'witName', label: "Witness's name", type: 'text' },
@@ -75,6 +76,7 @@
       'Accused (Bail Bond)': 'अभियुक्त (ज़मानत बांड)', "Accused's name": 'अभियुक्त का नाम', 'Relation': 'रिश्ता',
       'son of': 'पुत्र', 'daughter of': 'पुत्री', 'wife of': 'पत्नी', "Father's / husband's name": 'पिता / पति का नाम',
       'Age (years)': 'उम्र (साल)', 'Resident of (full address)': 'निवासी (पूरा पता)', 'Bond amount': 'बांड की रकम', 'Date of the bonds': 'बांड की तारीख़',
+      "Surety's photo (in the box on the Surety Bond)": 'ज़मानतदार की फ़ोटो (ज़मानतदार बांड के खाने में)', 'Optional — the box stays empty without it': 'ज़रूरी नहीं — न लगाएँ तो खाना ख़ाली रहेगा',
       'Surety': 'ज़मानतदार', "Surety's name": 'ज़मानतदार का नाम', 'Aadhaar No.': 'आधार नं.', 'Date of birth': 'जन्म तिथि',
       'Witness': 'गवाह', "Witness's name": 'गवाह का नाम',
       'Affidavit of the surety (security)': 'ज़मानतदार का शपथ पत्र (ज़मानत में क्या दिया)', 'Security given by the surety': 'ज़मानतदार ने ज़मानत में क्या दिया',
@@ -93,6 +95,7 @@
       'Accused (Bail Bond)': 'ਦੋਸ਼ੀ (ਜ਼ਮਾਨਤ ਬਾਂਡ)', "Accused's name": 'ਦੋਸ਼ੀ ਦਾ ਨਾਮ', 'Relation': 'ਰਿਸ਼ਤਾ',
       'son of': 'ਪੁੱਤਰ', 'daughter of': 'ਪੁੱਤਰੀ', 'wife of': 'ਪਤਨੀ', "Father's / husband's name": 'ਪਿਤਾ / ਪਤੀ ਦਾ ਨਾਮ',
       'Age (years)': 'ਉਮਰ (ਸਾਲ)', 'Resident of (full address)': 'ਵਾਸੀ (ਪੂਰਾ ਪਤਾ)', 'Bond amount': 'ਬਾਂਡ ਦੀ ਰਕਮ', 'Date of the bonds': 'ਬਾਂਡ ਦੀ ਤਰੀਕ',
+      "Surety's photo (in the box on the Surety Bond)": 'ਜ਼ਾਮਨ ਦੀ ਫ਼ੋਟੋ (ਜ਼ਾਮਨੀ ਬਾਂਡ ਦੇ ਖ਼ਾਨੇ ਵਿੱਚ)', 'Optional — the box stays empty without it': 'ਜ਼ਰੂਰੀ ਨਹੀਂ — ਨਾ ਲਾਓ ਤਾਂ ਖ਼ਾਨਾ ਖ਼ਾਲੀ ਰਹੇਗਾ',
       'Surety': 'ਜ਼ਾਮਨ', "Surety's name": 'ਜ਼ਾਮਨ ਦਾ ਨਾਮ', 'Aadhaar No.': 'ਆਧਾਰ ਨੰ.', 'Date of birth': 'ਜਨਮ ਮਿਤੀ',
       'Witness': 'ਗਵਾਹ', "Witness's name": 'ਗਵਾਹ ਦਾ ਨਾਮ',
       'Affidavit of the surety (security)': 'ਜ਼ਾਮਨ ਦਾ ਹਲਫ਼ਨਾਮਾ (ਜ਼ਮਾਨਤ ਵਿੱਚ ਕੀ ਦਿੱਤਾ)', 'Security given by the surety': 'ਜ਼ਾਮਨ ਨੇ ਜ਼ਮਾਨਤ ਵਿੱਚ ਕੀ ਦਿੱਤਾ',
@@ -267,7 +270,7 @@
       return header(48).concat([
         P([T(W('surety'), 14, { b: 1, u: 'single' })], 14, { align: 'center' }),
         { table: true, indent: 0, before: 2, border: 1.5, cols: [boxW, gapW, textW], rows: [{ h: Math.max(boxH, n * ln(14)), cells: [
-          { paras: [], pad: pad0, sides: { t: 'single', r: 'single', b: 'single', l: 'single' } },
+          { paras: [], pad: pad0, sides: { t: 'single', r: 'single', b: 'single', l: 'single' }, image: d.surPhoto || null },
           { paras: [], pad: pad0, sides: NB },
           { paras: [P(beside, 14, { align: 'both' })], pad: pad0, sides: NB },
         ] }] },
@@ -330,6 +333,12 @@
     fields: FIELDS,
     tr: TR,
     clientCaseMap: {},
+    // "Fill from Aadhaar" (js/capture.js) for each person
+    aadhaarTargets: [
+      { group: 'Accused (Bail Bond)', label: 'Accused (Bail Bond)', map: { accName: 'name', accRel: 'relChoice', accFather: 'father', accAge: 'age', accAddress: 'address' } },
+      { group: 'Surety', label: 'Surety', map: { surName: 'name', surRel: 'relChoice', surFather: 'father', surAge: 'age', surAddress: 'address', surAadhaar: 'aadhaar', surDob: 'dob' } },
+      { group: 'Witness', label: 'Witness', map: { witName: 'name', witRel: 'relChoice', witFather: 'father', witAddress: 'address', witAadhaar: 'aadhaar', witDob: 'dob' } },
+    ],
     clientTargets: [
       { label: 'Accused (Bail Bond)', map: { accName: 'name', accFather: 'father', accAddress: 'address' } },
       { label: 'Surety', map: { surName: 'name', surFather: 'father', surAddress: 'address' } },

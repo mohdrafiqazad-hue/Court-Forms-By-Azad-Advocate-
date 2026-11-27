@@ -151,6 +151,7 @@
     fields: FIELDS,
     tr: TR,
     clientCaseMap: { plaintiff: 'plaintiff', defendant: 'defendant' },
+    aadhaarTargets: [{ group: 'Address (table)', label: 'Address (table)', map: { adName: 'nameFather', adResident: 'addressLocal', adPO: 'po', adTehsil: 'tehsil', adDistt: 'district', signName: 'name' } }],
     clientTargets: [
       { label: 'Plaintiff', map: { plaintiff: 'name' } },
       { label: 'Defendant', map: { defendant: 'name' } },

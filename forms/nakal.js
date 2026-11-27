@@ -285,6 +285,7 @@
     // Client book → a client's saved case fills these form fields (case keys: nature, plaintiff, defendant, claim, place, court, decision)
     clientCaseMap: { nature: 'nature', caseNo: 'caseNo', plaintiff: 'plaintiff', defendant: 'defendant', claim: 'claim', village: 'place', court: 'court', decision: 'decision' },
     // Client book: which form fields a saved client's own details fill (client keys: name, father, occupation, address, po, ps, tehsil, district)
+    aadhaarTargets: [{ group: "Applicant's complete address", label: "Applicant's complete address", map: { aName: 'name', aFather: 'father', aPO: 'po', aTehsil: 'tehsil', aDistrict: 'district' } }],
     clientTargets: [
       { label: 'Plaintiff or Complainant', map: { plaintiff: 'name' } },
       { label: 'Defendant or Accused / Respondent', map: { defendant: 'name' } },

@@ -91,7 +91,13 @@
     let html = '';
     const en = CF.i18n.lang === 'en';
     for (const f of form.fields) {
-      if (f.group) { html += `<h3>${escH(ft(form, f.group))}</h3>`; continue; }
+      if (f.group) {
+        html += `<h3>${escH(ft(form, f.group))}</h3>`;
+        // "Fill from Aadhaar" for a person's group (js/capture.js)
+        const ai = (form.aadhaarTargets || []).findIndex(a => a.group === f.group);
+        if (ai >= 0) html += `<button type="button" class="btn sm aadbtn" data-aadhaar="${ai}">📷 ${escH(t('aadhaarBtn'))}</button>`;
+        continue;
+      }
       const id = 'f_' + f.key;
       const today = f.today ? `<button type="button" class="linkbtn" data-today="${f.key}">${escH(t('today'))}</button>` : '';
       const label = ft(form, f.label);
@@ -100,11 +106,14 @@
       if (f.type === 'choice') html += `<select id="${id}" data-k="${f.key}">${f.options.map(o => `<option value="${escH(o[0])}">${escH(ft(form, o[1]))}</option>`).join('')}</select>`;
       else if (f.type === 'pick') html += `<select id="${id}" data-pick="${f.key}">${f.options.map(o => `<option value="${escH(o[0])}">${escH(ft(form, o[1]))}</option>`).join('')}<option value="${OWN}">${escH(t('pickOwn'))}</option></select>`
         + `<textarea id="${id}_own" class="own" data-k="${f.key}" rows="1" placeholder="${escH(t('pickOwnPh'))}" autocapitalize="sentences" hidden></textarea>`;
+      else if (f.type === 'photo') html += `<span class="photo-fld" data-photo="${f.key}" id="${id}"><img alt="" hidden>`
+        + `<span class="ph-btns"><button type="button" class="btn sm" data-photo-cam>📷 ${escH(t('photoCam'))}</button><button type="button" class="btn sm" data-photo-gal>🖼 ${escH(t('photoGal'))}</button>`
+        + `<button type="button" class="btn sm" data-photo-del hidden>${escH(t('photoDel'))}</button></span></span>`;
       else if (f.type === 'area') html += `<textarea id="${id}" data-k="${f.key}" rows="${f.rows || 2}" autocapitalize="sentences"></textarea>`;
       else html += `<input id="${id}" data-k="${f.key}" type="text" placeholder="${escH(f.placeholder || '')}" autocapitalize="words">`;
       if (f.hint) html += `<small>${escH(ft(form, f.hint))}</small>`;
       html += `</label>`;
-      if (f.type !== 'choice' && f.type !== 'pick') html += `<div class="recent" data-recent="${f.key}" hidden></div>`;
+      if (f.type !== 'choice' && f.type !== 'pick' && f.type !== 'photo') html += `<div class="recent" data-recent="${f.key}" hidden></div>`;
     }
     $('#fields').innerHTML = html;
     paintRecent();
@@ -120,9 +129,12 @@
         `<button type="button" class="chip" data-chip="${escH(k)}" data-i="${i}" title="${escH(v)}">${escH(v.replace(/\s*\n\s*/g, ' · ').slice(0, 42))}${v.length > 42 ? '…' : ''}</button>`).join('') : '';
     });
   }
-  const remember = () => S.history.add(form.id, data, keysOf(form).filter(k => (form.fields.find(x => x.key === k) || {}).type !== 'choice'));
+  const remember = () => S.history.add(form.id, data, keysOf(form).filter(k => !['choice', 'photo'].includes((form.fields.find(x => x.key === k) || {}).type)));
   function fillInputs() {
-    for (const f of form.fields) if (f.key) { const el = document.getElementById('f_' + f.key); if (el) f.type === 'pick' ? setPick(f, el) : setVal(el, data[f.key]); }
+    for (const f of form.fields) if (f.key) {
+      const el = document.getElementById('f_' + f.key); if (!el) continue;
+      if (f.type === 'photo') CF.capture.paintPhoto(el, data[f.key]); else if (f.type === 'pick') setPick(f, el); else setVal(el, data[f.key]);
+    }
   }
   // A pick list: a listed value selects it; anything else is "Other" with the text in the box below
   const OWN = '\u2026own';
@@ -146,6 +158,7 @@
     if (!form) return;
     const ops = opsNow();
     if (ops.fam && !E.fontsReady()) E.loadFonts().then(() => render()); // Punjabi / Hindi fonts: draw again once loaded
+    E.loadImages(ops); // a photo (surety's box): ready for the PDF
     $('#paper').innerHTML = E.svg(form, ops, land());
     $('#count').classList.toggle('warn', !!ops.overflow);
     document.querySelectorAll('#plangSeg [data-pl]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pl === plang)));
@@ -187,7 +200,7 @@
     toast(t('saved', { f: name }));
   }
 
-  const makePdf = () => E.pdf(form, opsNow(), land());
+  const makePdf = async () => { const ops = opsNow(); await E.loadImages(ops); return E.pdf(form, ops, land()); };
   const makeDocx = () => form.flow ? CF.flow.docx(form, data, plang) : E.docx(form, form.build(data, plang), land(), plang);
   // file name: the language is added when it is not the form's own (Nakal: English; Talbana: Punjabi)
   const base = () => form.fileBase(data, orient) + (plang !== (form.defaultLang || 'en') ? '_' + PL_FILE[plang] : '');
@@ -542,11 +555,11 @@
     document.querySelectorAll('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => { setTab(b.dataset.tab); window.scrollTo(0, 0); }));
 
     $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => { track('word'); remember(); await E.loadFonts(); return saveFile(base() + '.docx', await makeDocx()); }, t('wordFail')));
-    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => { track('pdf'); remember(); await E.loadFonts(); return saveFile(base() + '.pdf', makePdf()); }, t('pdfFail')));
+    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => { track('pdf'); remember(); await E.loadFonts(); return saveFile(base() + '.pdf', await makePdf()); }, t('pdfFail')));
     $('#btnShare').hidden = !canShareFiles;
     $('#btnShare').addEventListener('click', e => busy(e.currentTarget, async () => {
       track('share'); await E.loadFonts();
-      const file = new File([makePdf()], base() + '.pdf', { type: 'application/pdf' });
+      const file = new File([await makePdf()], base() + '.pdf', { type: 'application/pdf' });
       await navigator.share({ files: [file], title: form.name });
     }, t('shareFail')));
 
@@ -610,6 +623,12 @@
   CF.showApp = () => { if (!started) { started = true; init(); } else { form = null; route(); } };
   CF.hideApp = () => { form = null; $('#home').hidden = true; $('#formView').hidden = true; if (CF.team) CF.team.hide(); };
   CF.toast = toast; CF.confirmBox = confirmBox;
+  // for js/capture.js: the open form, and setting values as if typed (saved, shown, printed)
+  CF.formApi = {
+    form: () => form,
+    set(vals) { if (!form) return; Object.assign(data, vals); save(); fillInputs(); paintRecent(); schedule(); },
+    openSheet: (title, html) => openSheet(title, html), closeSheet: () => closeSheet(),
+  };
   CF.route = () => route();
   const boot = () => { if (!CF.gated) CF.showApp(); };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();

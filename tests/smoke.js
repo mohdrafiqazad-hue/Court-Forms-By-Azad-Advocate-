@@ -223,6 +223,44 @@ const pdfInfo = buf => {
     await page.click('#btnClear'); await page.click('#confirm [data-yes]');
   }
 
+  // Aadhaar card → form (made-up test cards in tests/fixtures), and the surety's photo
+  console.log('Aadhaar and photo');
+  {
+    const FX = path.join(__dirname, 'fixtures');
+    await page.goto(APP + '#/f/bail'); await page.waitForSelector('#paper svg');
+    await page.click('#btnClear'); await page.click('#confirm [data-yes]');
+    check(await page.$$eval('[data-aadhaar]', x => x.length) === 3, 'bail: "Fill from Aadhaar card" for accused, surety and witness');
+    const readCard = async (i, files) => {
+      await page.click(`[data-aadhaar="${i}"]`);
+      const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-aad-pick="gal"]')]);
+      await fc.setFiles(files.map(f => path.join(FX, f)));
+      await page.waitForSelector('[data-aad-fill]', { timeout: 180000 }).catch(() => {});
+      const ok = !!(await page.$('[data-aad-fill]'));
+      if (ok) await page.click('[data-aad-fill]'); else await page.click('[data-sheet-close]');
+      await page.waitForTimeout(300);
+      return ok;
+    };
+    const val = k => page.$eval('#f_' + k, e => e.value);
+    check(await readCard(1, ['aadhaar-test-front.png', 'aadhaar-test-back.jpg']) && await val('surName') === 'Test Kumar' && await val('surFather') === 'Ram Lal'
+      && await val('surRel') === '' && await val('surDob') === '15.08.1985' && await val('surAadhaar') === '2345 6789 0124' && /Model Town.*Tehsil Jalandhar-1.*144001/.test(await val('surAddress')) && /^\d+$/.test(await val('surAge')),
+      'aadhaar: secure QR (photo of the back) + printed number → surety name, S/O, DOB, age, address, Aadhaar No.');
+    check(await readCard(2, ['aadhaar-test-oldqr.png']) && await val('witName') === 'Old Card Singh' && await val('witRel') === 'wife of' && await val('witFather') === 'Test Singh' && await val('witAadhaar') === '2345 6789 0124',
+      'aadhaar: old XML QR → witness name, W/O, husband, Aadhaar No.');
+    check(await page.evaluate(() => CF.capture.verhoeff('234567890124') && !CF.capture.verhoeff('234567890123')), 'aadhaar: number check digit (Verhoeff)');
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-photo="surPhoto"] [data-photo-gal]')]);
+    await fc.setFiles(path.join(FX, 'aadhaar-test-front.png')); await page.waitForTimeout(800);
+    const pp = await dl('#btnPdf'), ww = await dl('#btnWord');
+    check(pdfInfo(pp.buf).pages === 4 && pp.buf.toString('latin1').includes('/Subtype /Image') && /<pic:pic/.test(zipText(ww.buf, 'word/document.xml')) && (await page.$$eval('#paper image', x => x.length)) === 1,
+      "bail: surety's photo in the box (preview, PDF, Word), still 4 pages");
+    await page.click('[data-photo="surPhoto"] [data-photo-del]'); await page.waitForTimeout(300);
+    check(!(await page.$$eval('#paper image', x => x.length)), 'bail: photo can be removed');
+    await page.goto(APP + '#/f/address'); await page.waitForSelector('#paper svg');
+    check(await readCard(0, ['aadhaar-test-back.jpg']) && /^Test Kumar S\/o Ram Lal$/.test(await val('adName')) && await val('adPO') === 'Model Town' && await val('adTehsil') === 'Jalandhar-1' && await val('adDistt') === 'Jalandhar',
+      'address form: Aadhaar fills name S/o father, post office, tehsil, district');
+    await page.click('#btnClear'); await page.click('#confirm [data-yes]');
+    await page.goto(APP + '#/f/bail'); await page.click('#btnClear'); await page.click('#confirm [data-yes]');
+  }
+
   // List of Documents: numbers are added, and 30 long documents still make one page
   await page.goto(APP + '#/f/listdocs'); await page.waitForSelector('#paper svg');
   check(/>1\.<\/text>/.test(await page.innerHTML('#paper')) && /Copy of Aadhaar Card/.test(await page.innerHTML('#paper')), 'list: documents are numbered 1., 2., …');

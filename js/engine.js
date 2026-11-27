@@ -173,6 +173,7 @@
     let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(form.name)} preview"><rect width="${W}" height="${H}" fill="#fff"/><g transform="${g}" font-family="${esc(ops.fam || TIMES).replace(/"/g, '&quot;')}" fill="#000">`;
     for (const o of ops) {
       if (o.t === 'rect') s += `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="none" stroke="#000" stroke-width="0.5"/>`;
+      else if (o.t === 'image') s += `<image href="${o.src}" x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" preserveAspectRatio="xMidYMid slice"/>`;
       else if (o.t === 'line') s += `<line x1="${o.x1}" y1="${o.y1}" x2="${o.x2}" y2="${o.y2}" stroke="#000" stroke-width="${o.wdt}"${o.dash ? ` stroke-dasharray="${o.dash.join(' ')}"` : ''}/>`;
       else s += `<text x="${o.x}" y="${o.y}" font-size="${o.size}"${o.bold ? ' font-weight="bold"' : ''}${o.italic ? ' font-style="italic"' : ''}${o.fam ? ` font-family="${esc(o.fam).replace(/"/g, '&quot;')}"` : ''} xml:space="preserve"${o.angle ? ` transform="rotate(${-o.angle} ${o.x} ${o.y})"` : ''}>${esc(o.text)}</text>`;
     }
@@ -191,6 +192,7 @@
     x.fillStyle = '#000'; x.strokeStyle = '#000'; x.textBaseline = 'alphabetic';
     for (const o of ops) {
       if (o.t === 'rect') { x.lineWidth = 0.5; x.strokeRect(o.x, o.y, o.w, o.h); }
+      else if (o.t === 'image') { const im = images.get(o.src); if (im && im.complete) x.drawImage(im, o.x, o.y, o.w, o.h); }
       else if (o.t === 'line') { x.lineWidth = o.wdt; x.setLineDash(o.dash || []); x.beginPath(); x.moveTo(o.x1, o.y1); x.lineTo(o.x2, o.y2); x.stroke(); x.setLineDash([]); }
       else {
         x.save(); x.font = cssFont(o.fam || ops.fam || TIMES, o.size, o.bold, o.italic); x.translate(o.x, o.y);
@@ -201,6 +203,16 @@
     return cv;
   }
 
+  // pictures on a page (a photo box): loaded once, so the canvas can draw them
+  const images = new Map();
+  function loadImages(ops) {
+    const srcs = sheets(ops).flatMap(p => p.filter(o => o.t === 'image').map(o => o.src));
+    return Promise.all(srcs.map(src => {
+      if (images.has(src) && images.get(src).complete) return null;
+      const im = new Image(); images.set(src, im);
+      return new Promise(ok => { im.onload = im.onerror = ok; im.src = src; });
+    }));
+  }
   // the sheets of a multi-page form (ops.pages; the first sheet is ops itself)
   const sheets = ops => (ops.pages || [ops]).map(o => { const c = Object.assign([], o); delete c.pages; return c; });
   function pdf(form, ops, land) {
@@ -216,6 +228,7 @@
       }
       doc.setLineWidth(0.5); doc.setDrawColor(0);
       for (const o of page) {
+        if (o.t === 'image') { if (!land) doc.addImage(o.src, 'JPEG', o.x, o.y, o.w, o.h); continue; }
         if (o.t === 'rect') {
           const pts = [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]].map(p => tp(p[0], p[1]));
           doc.setLineWidth(0.5);
@@ -347,5 +360,5 @@
     return D.Packer.toBlob(doc);
   }
 
-  CF.engine = { layout, svg, pdf, docx, loadFonts, fontsReady: () => fontsOk, PRINT_LANGS, canvasPage, TIMES, INDIC, cssFont };
+  CF.engine = { layout, svg, pdf, docx, loadFonts, fontsReady: () => fontsOk, PRINT_LANGS, canvasPage, TIMES, INDIC, cssFont, loadImages };
 })();
